@@ -1,0 +1,14 @@
+{
+  "route_slug": "shikoku88-temple-11-to-temple-12",
+  "status": "complete",
+  "dem_source": "local_hgt",
+  "coverage_ratio": 1.0,
+  "source_sample_count": 564,
+  "sample_count": 103,
+  "min_elevation_m": 31.0,
+  "max_elevation_m": 759.0,
+  "ascent_m": 1548.0,
+  "descent_m": 894.0,
+  "web_elevation_step_m": 100.0,
+  "note": "Reference summary extracted from the supplied Henro Hub elevation profile. The original archive contains 103 downsampled samples derived from 564 route vertices. Exact HGT DEM provider provenance is not embedded in the archive and must be confirmed before this data is treated as a release asset."
+}
