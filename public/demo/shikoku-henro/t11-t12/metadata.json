@@ -1,0 +1,22 @@
+{
+  "id": "shikoku-henro-t11-t12",
+  "title": "Shikoku Henro: Temple 11 Fujiidera → Temple 12 Shōsanji",
+  "subtitle": "First Henro-korogashi mountain section",
+  "from": {
+    "id": "temple-11",
+    "name": "Fujiidera",
+    "templeNumber": 11
+  },
+  "to": {
+    "id": "temple-12",
+    "name": "Shōsanji",
+    "templeNumber": 12
+  },
+  "distanceM": 11614.2,
+  "ascentM": 1548.0,
+  "descentM": 894.0,
+  "minElevationM": 31.0,
+  "maxElevationM": 759.0,
+  "sourceAttribution": "© OpenStreetMap contributors; likely distributed via Waymarked Trails — exact original download source to confirm before public release",
+  "dataLicense": "ODbL-1.0 (provisional pending exact source confirmation)"
+}
