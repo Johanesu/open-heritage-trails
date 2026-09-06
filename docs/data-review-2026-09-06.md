@@ -29,7 +29,7 @@ The archive contained nine project files plus macOS metadata:
 
 ## Files selected for initial GitHub development dataset
 
-- `trail.geojson`: currently uses the 87-vertex web export because it is lightweight and sufficient to begin Cesium development.
+- `trail.geojson`: a **150-vertex** simplification derived from the supplied 564-vertex full route. This retains substantially more trail detail than the 87-vertex web export while staying compact for the prototype.
 - `metadata.json`: normalized project metadata.
 - `route-summary.json`: compact reference statistics.
 - `elevation-profile.reference.json`: compact elevation summary only.
@@ -39,6 +39,6 @@ The archive contained nine project files plus macOS metadata:
 ## Before grant-ready release
 
 1. Confirm the exact original route download source. Waymarked Trails / OpenStreetMap relation 13653655 is the strong current match.
-2. Replace the web route with the supplied 564-vertex full route for maximum fidelity.
+2. Optionally replace the 150-vertex prototype route with the supplied 564-vertex full route for maximum fidelity.
 3. Confirm the original HGT DEM provider before publishing the full elevation sample file.
 4. Add 8–12 user-approved cultural/practical POIs.
