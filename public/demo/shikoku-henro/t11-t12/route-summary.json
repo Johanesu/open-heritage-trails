@@ -1,0 +1,18 @@
+{
+  "route_slug": "shikoku88-temple-11-to-temple-12",
+  "parts": 1,
+  "vertices": 564,
+  "length_m": 11614.2,
+  "length_km": 11.614,
+  "source_kind": "anchor_split",
+  "source_route_slug": "shikoku-88-main",
+  "from_label": "Temple 11",
+  "to_label": "Temple 12",
+  "elevation_status": "complete",
+  "ascent_m": 1548.0,
+  "descent_m": 894.0,
+  "elevation_coverage_ratio": 1.0,
+  "min_elevation_m": 31.0,
+  "max_elevation_m": 759.0,
+  "surface_match_coverage_ratio": 1.0
+}
