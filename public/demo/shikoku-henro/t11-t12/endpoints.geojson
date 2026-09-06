@@ -1,0 +1,33 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "temple-11",
+        "name": "Fujiidera",
+        "label": "T11 Fujiidera",
+        "templeNumber": 11,
+        "kind": "temple-endpoint"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [134.348913, 34.0515933]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "temple-12",
+        "name": "Shōsanji",
+        "label": "T12 Shōsanji",
+        "templeNumber": 12,
+        "kind": "temple-endpoint"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [134.3105909, 33.9850732]
+      }
+    }
+  ]
+}
