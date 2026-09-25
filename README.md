@@ -18,7 +18,9 @@ The committed reference data lives in [`public/demo/shikoku-henro/t11-t12/`](pub
 
 This is a working local prototype and a Cesium Ecosystem Grant reference implementation. It has **not** been publicly deployed by this repository task.
 
-Before a tagged public release or live deployment, the project owner must confirm the exact original route download/source and the final production Cesium ion token configuration. The POI glyphs now use MIT-licensed Tabler Icons; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). The current route attribution remains provisional; see [`DATA_LICENSE.md`](DATA_LICENSE.md) and the [T11 → T12 source notes](public/demo/shikoku-henro/t11-t12/SOURCE.md). Do not treat the software license as a license for the geographic data or third-party assets.
+The T11 → T12 route is attributed as OpenStreetMap/ODbL data sourced via Waymarked Trails; the exact historical retrieval date/file is no longer available but the source is documented in [`DATA_LICENSE.md`](DATA_LICENSE.md) and the [T11 → T12 source notes](public/demo/shikoku-henro/t11-t12/SOURCE.md). The POI glyphs use MIT-licensed Tabler Icons; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+
+Before live deployment, the remaining operational gate is the final production Cesium ion token configuration for the public hostname. Elevation-profile provenance remains separately documented because the original HGT provider is not recorded.
 
 ## Run locally
 

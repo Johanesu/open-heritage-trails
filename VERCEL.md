@@ -4,14 +4,16 @@ This document describes a **later** public deployment. No Vercel project, deploy
 
 ## Release gate — confirm before connecting or deploying
 
-The project owner must first confirm:
+The route and icon provenance gates are now documented:
 
-1. The exact original route download/source. The likely OpenStreetMap/Waymarked Trails connection remains provisional in the [dataset source notes](public/demo/shikoku-henro/t11-t12/SOURCE.md).
-2. A separate production Cesium ion token configured for the final public hostname and the minimum required public scopes.
+- T11 → T12 route geometry: OpenStreetMap/ODbL data sourced via Waymarked Trails; see the [dataset source notes](public/demo/shikoku-henro/t11-t12/SOURCE.md).
+- POI interface glyphs: selected **Tabler Icons** under the MIT License; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
-The seven POI interface glyphs no longer block release: they have been replaced with selected **Tabler Icons** assets under the MIT License, documented in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+The remaining operational gate before live deployment is:
 
-Do not import/connect the repository to a Vercel project until these remaining gates are cleared if doing so would trigger an automatic deployment. Do not create or paste a production token in the repository or `.env.local`.
+1. A separate production Cesium ion token configured for the final public hostname and the minimum required public scopes.
+
+Do not create or paste a production token in the repository or `.env.local`.
 
 ## Recommended project settings after approval
 

@@ -4,9 +4,13 @@
 
 The supplied Henro Hub export contains the Temple 11 Fujiidera → Temple 12 Shōsanji section as a single `LineString` with 564 source vertices and a reported length of 11.614 km.
 
-The project owner reports that this main-route geometry originates from an openly downloadable trail source connected to the OpenStreetMap hiking ecosystem. External verification found a strong match with **Waymarked Trails / OpenStreetMap relation 13653655 (Shikoku Pilgrimage)**. Waymarked Trails states that its GPX tracks use OpenStreetMap data under the **ODbL 1.0** and require attribution to OpenStreetMap and Waymarked Trails.
+The project owner recalls with high confidence that this T11 → T12 main-route geometry was originally obtained from **Waymarked Trails**. For this section, the Henro Hub source export contains no alternative-route geometry, which reduces ambiguity about which alignment was used. The exact historical retrieval date and original downloaded file are no longer available.
 
-Before the first tagged public release or Cesium grant submission, confirm the exact original download source used for this Henro Hub route export. Until then, repository metadata labels the ODbL attribution as provisional rather than claiming provenance with certainty.
+Waymarked Trails' hiking map identifies its route/map data as **OpenStreetMap data under the Open Data Commons Open Database License (ODbL)**. The Shikoku Pilgrimage is represented in OpenStreetMap as relation **13653655**. The repository therefore attributes this route geometry as OpenStreetMap/ODbL data sourced via Waymarked Trails rather than treating the provenance as provisional.
+
+Required route attribution for the demo:
+
+> Route data © OpenStreetMap contributors, ODbL 1.0; sourced via Waymarked Trails.
 
 Useful references:
 
@@ -30,7 +34,7 @@ For the initial Cesium prototype, the route does not require this profile to sit
 - Full route vertices: **564**
 - Elevation coverage reported by the export: **100%**
 
-These figures are treated as Henro Hub-derived reference data for development; source attribution remains governed by the underlying route and DEM datasets.
+These figures are treated as Henro Hub-derived reference data for development; source attribution for the route geometry is governed by OpenStreetMap/ODbL as described above. Elevation-profile provenance remains separate.
 
 ## POI demonstration dataset
 
@@ -44,4 +48,3 @@ Two details are intentional:
 
 - `Ryusui-an` and `Pilgrim Rest Area Ryūsui-an` are separate records representing the sacred site and the nearby enclosed pilgrim hut.
 - `Zaō-Dai Gongen` lies beyond Temple 12 on the summit continuation and is included to demonstrate sacred geography around, not only directly on, the mapped trail.
-

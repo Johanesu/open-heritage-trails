@@ -17,6 +17,6 @@
   "descentM": 894.0,
   "minElevationM": 31.0,
   "maxElevationM": 759.0,
-  "sourceAttribution": "© OpenStreetMap contributors; likely distributed via Waymarked Trails — exact original download source to confirm before public release",
-  "dataLicense": "ODbL-1.0 (provisional pending exact source confirmation)"
+  "sourceAttribution": "Route data © OpenStreetMap contributors, ODbL 1.0; sourced via Waymarked Trails",
+  "dataLicense": "ODbL-1.0"
 }
