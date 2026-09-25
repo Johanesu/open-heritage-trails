@@ -6,11 +6,12 @@ This document describes a **later** public deployment. No Vercel project, deploy
 
 The project owner must first confirm:
 
-1. The final public-license status and provenance of the seven SVG glyphs copied from Henro Hub. [`DATA_LICENSE.md`](DATA_LICENSE.md) records this as unresolved; do not assume the Apache-2.0 software license covers them.
-2. The exact original route download/source. The likely OpenStreetMap/Waymarked Trails connection remains provisional in the [dataset source notes](public/demo/shikoku-henro/t11-t12/SOURCE.md).
-3. A separate production Cesium ion token configured for the final public hostname and the minimum required public scopes.
+1. The exact original route download/source. The likely OpenStreetMap/Waymarked Trails connection remains provisional in the [dataset source notes](public/demo/shikoku-henro/t11-t12/SOURCE.md).
+2. A separate production Cesium ion token configured for the final public hostname and the minimum required public scopes.
 
-Do not import/connect the repository to a Vercel project until these gates are cleared if doing so would trigger an automatic deployment. Do not create or paste a production token in the repository or `.env.local`.
+The seven POI interface glyphs no longer block release: they have been replaced with selected **Tabler Icons** assets under the MIT License, documented in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+
+Do not import/connect the repository to a Vercel project until these remaining gates are cleared if doing so would trigger an automatic deployment. Do not create or paste a production token in the repository or `.env.local`.
 
 ## Recommended project settings after approval
 
