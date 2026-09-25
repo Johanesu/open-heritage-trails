@@ -1,63 +1,59 @@
 # Open Heritage Trails
 
-Open-source 3D toolkit for cultural, pilgrimage and long-distance trails, built with CesiumJS.
+Open Heritage Trails is an open-source 3D toolkit for cultural, pilgrimage, and long-distance trails. Its browser prototype uses CesiumJS to place route geometry, terrain, trail statistics, and cultural and practical places in one interactive map.
 
-The first reference implementation uses the Shikoku Henro section from Temple 11 Fujiidera to Temple 12 Shōsanji in Tokushima, Japan.
+The current reference implementation follows the Shikoku Henro from Temple 11 Fujiidera to Temple 12 Shōsanji in Tokushima, Japan. It is a standalone demonstration, not a production Henro Hub integration.
 
-## Status
+## Current prototype
 
-Early prototype / Cesium Ecosystem Grant reference implementation.
+- CesiumJS globe with Cesium World Terrain and imagery; the T11 → T12 route is clamped to terrain and its endpoints are labeled.
+- A collapsible route panel with distance, ascent, descent, elevation range, and source attribution.
+- 3D / 2D, fit-route, and T11 / T12 navigation controls.
+- Twelve project-owner-approved cultural and practical POIs loaded from static GeoJSON, with selectable detail cards, category-colored Henro Hub-derived glyph pins, and an icon legend.
+- A responsive browser layout for basic desktop and mobile use, with Cesium navigation help and credits retained.
 
-The repository currently contains the approved architecture, implementation plan, licensing/provenance notes, and the initial T11 → T12 reference dataset. Application code is intentionally not scaffolded yet; implementation begins with Task 1 of the plan.
+The committed reference data lives in [`public/demo/shikoku-henro/t11-t12/`](public/demo/shikoku-henro/t11-t12/). The POIs, route, and metadata are external files rather than hard-coded React content.
 
-## Why this project exists
+## Status and public-release gates
 
-Long-distance cultural trails are usually presented as flat route lines or destination-specific applications. Open Heritage Trails explores a reusable way to combine trail geometry, terrain, cultural and practical places, and structured metadata in a purpose-built 3D geospatial experience that can later be adapted to routes worldwide.
+This is a working local prototype and a Cesium Ecosystem Grant reference implementation. It has **not** been publicly deployed by this repository task.
 
-Henro Hub is the first real-world reference platform and future integration target, but Open Heritage Trails remains a standalone open-source project.
+Before a tagged public release or live deployment, the project owner must confirm the seven reused Henro Hub SVG glyphs' public-license status/provenance, the exact original route download/source, and the final production Cesium ion token configuration. The current route attribution is provisional; see [`DATA_LICENSE.md`](DATA_LICENSE.md) and the [T11 → T12 source notes](public/demo/shikoku-henro/t11-t12/SOURCE.md). Do not treat the software license as a license for the geographic data or reused interface assets.
 
-## First reference implementation
+## Run locally
 
-**Shikoku Henro: Temple 11 Fujiidera → Temple 12 Shōsanji**
+1. Install dependencies:
 
-The initial dataset lives at:
+   ```bash
+   npm install
+   ```
 
-`public/demo/shikoku-henro/t11-t12/`
+2. Copy the example environment file and put your **local-development** Cesium ion token in `.env.local` as `VITE_CESIUM_ION_ACCESS_TOKEN`:
 
-It includes trail geometry, normalized metadata, route endpoints, attribution notes, an elevation summary, and an intentionally empty POI collection awaiting user-approved cultural/practical records.
+   ```bash
+   cp .env.example .env.local
+   ```
 
-## Architecture
+   `.env.local` must never be committed. The `VITE_` prefix makes this value available to browser code, so use an appropriately scoped, URL-restricted token rather than treating it as a server-side secret.
 
-The first prototype uses:
+3. Start the development server:
 
-- Vite
-- React
-- TypeScript
-- CesiumJS
-- Cesium World Terrain through Cesium ion
-- static trail/POI data for the reference implementation
+   ```bash
+   npm run dev
+   ```
 
-Current stable package versions are to be selected when implementation begins rather than copied from Henro Hub's older dependency environment.
+Without a token, the map shows a visible configuration error instead of initializing Cesium. For eventual public hosting, use a **separate** production token; see [`VERCEL.md`](VERCEL.md).
 
-## Project documents
+## Architecture and project documents
 
-- Design: `docs/superpowers/specs/2026-09-06-open-heritage-trails-prototype-design.md`
-- Implementation plan: `docs/superpowers/plans/2026-09-06-open-heritage-trails-prototype.md`
-- Pre-Codex status: `docs/implementation-status.md`
-- Dataset review: `docs/data-review-2026-09-06.md`
-- Codex start instructions: `docs/codex-start.md`
-- Contribution guide: `CONTRIBUTING.md`
+The app uses Vite, React, TypeScript, CesiumJS, static demo data, and `vite-plugin-static-copy`. Vite serves Cesium Workers, Assets, Widgets, and ThirdParty from `/cesium` in development and copies them to `dist/cesium` for production output.
 
-## Development environment
-
-The application will read the Cesium ion token from:
-
-`VITE_CESIUM_ION_ACCESS_TOKEN`
-
-Copy `.env.example` to `.env.local` once the local scaffold exists. Never commit the real token.
+- [Design](docs/superpowers/specs/2026-09-06-open-heritage-trails-prototype-design.md)
+- [Implementation plan](docs/superpowers/plans/2026-09-06-open-heritage-trails-prototype.md)
+- [Contribution guide](CONTRIBUTING.md)
+- [Data and asset licensing](DATA_LICENSE.md)
+- [Deployment preparation](VERCEL.md)
 
 ## License
 
-Software: Apache License 2.0.
-
-Geographic and elevation data: see `DATA_LICENSE.md` and the source notes in each demo dataset directory.
+Open Heritage Trails software is licensed under [Apache License 2.0](LICENSE). Geographic/elevation data and reused interface assets have separate provenance and licensing considerations described in [`DATA_LICENSE.md`](DATA_LICENSE.md) and the dataset's `SOURCE.md`.
