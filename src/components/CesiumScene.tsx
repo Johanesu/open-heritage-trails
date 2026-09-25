@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Viewer } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
+import { fitTrail } from '../cesium/camera';
 import { createViewer } from '../cesium/createViewer';
+import { loadTrail } from '../cesium/loadTrail';
+import { getTrailGeoJsonUrl } from '../data/loadDemo';
 
 function CesiumScene() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -17,24 +20,34 @@ function CesiumScene() {
     let viewer: Viewer | undefined;
     let disposed = false;
 
-    void createViewer(container)
-      .then((createdViewer) => {
-        if (disposed) {
-          createdViewer.destroy();
-          return;
-        }
+    async function initializeScene(sceneContainer: HTMLElement) {
+      const createdViewer = await createViewer(sceneContainer);
 
-        viewer = createdViewer;
-      })
-      .catch((cause: unknown) => {
-        if (!disposed) {
-          setError(
-            cause instanceof Error
-              ? cause.message
-              : 'Unable to initialize the Cesium Viewer',
-          );
-        }
-      });
+      if (disposed) {
+        createdViewer.destroy();
+        return;
+      }
+
+      viewer = createdViewer;
+      const trailSource = await loadTrail(
+        createdViewer,
+        getTrailGeoJsonUrl(),
+      );
+
+      if (!disposed) {
+        await fitTrail(createdViewer, trailSource);
+      }
+    }
+
+    void initializeScene(container).catch((cause: unknown) => {
+      if (!disposed) {
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : 'Unable to initialize the Cesium Viewer',
+        );
+      }
+    });
 
     return () => {
       disposed = true;
