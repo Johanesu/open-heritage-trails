@@ -17,7 +17,7 @@ describe('CesiumScene', () => {
     const destroy = vi.fn();
     createViewerMock.mockResolvedValue({ destroy });
 
-    const { unmount } = render(<CesiumScene />);
+    const { unmount } = render(<CesiumScene onSelectPoi={() => undefined} />);
 
     await waitFor(() => {
       expect(createViewerMock).toHaveBeenCalledTimes(1);
@@ -36,7 +36,7 @@ describe('CesiumScene', () => {
       new Error('Missing VITE_CESIUM_ION_ACCESS_TOKEN'),
     );
 
-    render(<CesiumScene />);
+    render(<CesiumScene onSelectPoi={() => undefined} />);
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Missing VITE_CESIUM_ION_ACCESS_TOKEN',

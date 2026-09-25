@@ -6,16 +6,18 @@ import { createViewer } from '../cesium/createViewer';
 import { getPoiRecord, loadPois, type PoiRecord } from '../cesium/loadPois';
 import { loadTrail } from '../cesium/loadTrail';
 import { getTrailGeoJsonUrl } from '../data/loadDemo';
-import PoiCard from './PoiCard';
 import ViewControls from './ViewControls';
 
-function CesiumScene() {
+interface CesiumSceneProps {
+  onSelectPoi: (poi: PoiRecord | null) => void;
+}
+
+function CesiumScene({ onSelectPoi }: CesiumSceneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<{ viewer: Viewer; trailSource: GeoJsonDataSource } | null>(null);
   const removeMorphListenerRef = useRef<(() => void) | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
-  const [selectedPoi, setSelectedPoi] = useState<PoiRecord | null>(null);
 
   function focusEndpoint(last: boolean) {
     const scene = sceneRef.current;
@@ -93,7 +95,7 @@ function CesiumScene() {
         createdViewer.screenSpaceEventHandler.setInputAction((movement: { position: Cartesian2 }) => {
           const picked = createdViewer.scene.pick(movement.position);
           const entity = picked?.id;
-          setSelectedPoi(
+          onSelectPoi(
             entity instanceof Entity && poiSource.entities.contains(entity)
               ? getPoiRecord(entity, createdViewer.clock.currentTime) ?? null
               : null,
@@ -122,7 +124,7 @@ function CesiumScene() {
       sceneRef.current = null;
       viewer?.destroy();
     };
-  }, []);
+  }, [onSelectPoi]);
 
   return (
     <section
@@ -155,7 +157,6 @@ function CesiumScene() {
           <p>{error}</p>
         </div>
       ) : null}
-      {selectedPoi ? <PoiCard poi={selectedPoi} onClose={() => setSelectedPoi(null)} /> : null}
       <ViewControls
         disabled={!ready}
         on3D={() => switchMode(SceneMode.SCENE3D)}

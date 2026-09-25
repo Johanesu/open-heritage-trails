@@ -7,6 +7,7 @@ describe('PoiCard', () => {
     const onClose = vi.fn();
     render(<PoiCard poi={{
       id: 'sdb-101', name: 'Fujii-dera', category: 'temple',
+      iconKey: 'temple',
       description: 'Approved description.', henroHubUrl: 'https://henro.app/places/fujii-dera',
     }} onClose={onClose} />);
 
@@ -23,6 +24,7 @@ describe('PoiCard', () => {
   it('omits the link when the approved record has no URL', () => {
     render(<PoiCard poi={{
       id: 'sdb-405', name: 'Pilgrim Rest Area Ryūsui-an', category: 'pilgrim-rest',
+      iconKey: 'enclosed-hut',
       description: 'An enclosed pilgrim hut in the forest.',
     }} onClose={() => undefined} />);
 

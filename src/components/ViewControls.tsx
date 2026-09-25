@@ -18,17 +18,7 @@ function ViewControls({
   return (
     <nav
       aria-label="Map views and navigation"
-      style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '0.4rem',
-        justifyContent: 'flex-end',
-        maxWidth: 'calc(100vw - 2rem)',
-        position: 'fixed',
-        right: '1rem',
-        top: '1rem',
-        zIndex: 1,
-      }}
+      className="view-controls"
     >
       {([
         ['3D', on3D],

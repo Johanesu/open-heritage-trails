@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getPoiRecord, loadPois, validatePoiGeoJson } from './loadPois';
 
 const cesiumMocks = vi.hoisted(() => ({
-  fromText: vi.fn((letter: string) => ({ letter })),
+  fromUrl: vi.fn(async (url: string) => ({ url })),
   load: vi.fn(),
 }));
 
@@ -13,7 +13,7 @@ vi.mock('cesium', () => ({
   GeoJsonDataSource: { load: cesiumMocks.load },
   HeightReference: { CLAMP_TO_GROUND: 'clamp-to-ground' },
   JulianDate: { now: vi.fn(() => 'now') },
-  PinBuilder: vi.fn(function PinBuilder() { return { fromText: cesiumMocks.fromText }; }),
+  PinBuilder: vi.fn(function PinBuilder() { return { fromUrl: cesiumMocks.fromUrl }; }),
   VerticalOrigin: { BOTTOM: 'bottom' },
 }));
 
@@ -35,6 +35,20 @@ describe('POI GeoJSON', () => {
     expect(collection.features.map((feature) => feature.properties.name)).toContain('Ryusui-an');
     expect(collection.features.map((feature) => feature.properties.name)).toContain('Pilgrim Rest Area Ryūsui-an');
     expect(collection.features.map((feature) => feature.properties.name)).toContain('Zaō-Dai Gongen');
+    expect(collection.features.map((feature) => [feature.properties.name, feature.properties.iconKey])).toEqual([
+      ['Fujii-dera', 'temple'],
+      ['HENRO HOUSE Oyado Eleven', 'pilgrim-lodging'],
+      ['Fujii-dera Okunoin — Dainichi Nyorai Statue', 'daishido'],
+      ['Chōto-an', 'daishido'],
+      ['The birthplace of landscape', 'semi-enclosed-hut'],
+      ['Ryusui-an', 'temple'],
+      ['Pilgrim Rest Area Ryūsui-an', 'enclosed-hut'],
+      ['Joren-an', 'shrine'],
+      ['Joshin-an', 'temple'],
+      ['Ryūō-kutsu', 'cave'],
+      ['Shōsan-ji', 'temple'],
+      ['Zaō-Dai Gongen', 'daishido'],
+    ]);
   });
 
   it.each([
@@ -44,6 +58,8 @@ describe('POI GeoJSON', () => {
     ['category', (feature: Record<string, unknown>) => { (feature.properties as Record<string, unknown>).category = 'unknown'; }],
     ['description', (feature: Record<string, unknown>) => { (feature.properties as Record<string, unknown>).description = ''; }],
     ['optional URL', (feature: Record<string, unknown>) => { (feature.properties as Record<string, unknown>).henroHubUrl = ''; }],
+    ['missing icon key', (feature: Record<string, unknown>) => { delete (feature.properties as Record<string, unknown>).iconKey; }],
+    ['unknown icon key', (feature: Record<string, unknown>) => { (feature.properties as Record<string, unknown>).iconKey = 'unknown'; }],
   ])('rejects a feature with an invalid %s', (_label, corrupt) => {
     const collection = structuredClone(approved) as { features: Record<string, unknown>[] };
     corrupt(collection.features[0]);
@@ -51,7 +67,7 @@ describe('POI GeoJSON', () => {
     expect(() => validatePoiGeoJson(collection)).toThrow('Invalid POI GeoJSON');
   });
 
-  it('loads approved features as terrain-visible, letter-coded category pins', async () => {
+  it('loads approved features as terrain-visible, glyph-coded category pins', async () => {
     const collection = validatePoiGeoJson(approved);
     const entities = collection.features.map((feature) => ({
       properties: { getValue: () => feature.properties },
@@ -71,22 +87,30 @@ describe('POI GeoJSON', () => {
     expect(entities[0].billboard).toMatchObject({
       heightReference: 'clamp-to-ground',
       disableDepthTestDistance: Infinity,
-      image: { letter: 'T' },
+      image: { url: '/icons/henro-hub/temple.svg' },
     });
-    expect(cesiumMocks.fromText.mock.calls.map(([letter]) => letter)).toEqual(
-      expect.arrayContaining(['T', 'S', 'R', 'A', 'V']),
+    expect(cesiumMocks.fromUrl.mock.calls.map(([url]) => url)).toEqual(
+      expect.arrayContaining([
+        '/icons/henro-hub/temple.svg',
+        '/icons/henro-hub/daishido.svg',
+        '/icons/henro-hub/shrine.svg',
+        '/icons/henro-hub/cave.svg',
+        '/icons/henro-hub/pilgrimlodging.svg',
+        '/icons/henro-hub/enclosedhut.svg',
+        '/icons/henro-hub/semienclosedhut.svg',
+      ]),
     );
   });
 
   it('exposes only approved card fields from a picked entity', () => {
     const entity = { properties: { getValue: () => ({
       id: 'sdb-101', name: 'Fujii-dera', category: 'temple',
-      description: 'Approved description', internalNote: 'do not expose',
+      iconKey: 'temple', description: 'Approved description', internalNote: 'do not expose',
     }) } };
 
     expect(getPoiRecord(entity as never, 'now' as never)).toEqual({
       id: 'sdb-101', name: 'Fujii-dera', category: 'temple',
-      description: 'Approved description',
+      iconKey: 'temple', description: 'Approved description',
     });
   });
 });

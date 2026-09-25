@@ -9,6 +9,7 @@ import {
   type Entity,
   type Viewer,
 } from 'cesium';
+import { poiIcons, type PoiIconKey } from '../data/poiIcons';
 
 export type PoiCategory =
   | 'temple'
@@ -21,6 +22,7 @@ export interface PoiRecord {
   id: string;
   name: string;
   category: PoiCategory;
+  iconKey: PoiIconKey;
   description: string;
   henroHubUrl?: string;
 }
@@ -36,12 +38,12 @@ interface PoiCollection {
   features: PoiFeature[];
 }
 
-const categoryStyle: Record<PoiCategory, { color: string; letter: string }> = {
-  temple: { color: '#174d91', letter: 'T' },
-  'sacred-site': { color: '#733f9d', letter: 'S' },
-  'pilgrim-rest': { color: '#08786b', letter: 'R' },
-  accommodation: { color: '#9a5812', letter: 'A' },
-  viewpoint: { color: '#b13554', letter: 'V' },
+const categoryColors: Record<PoiCategory, string> = {
+  temple: '#174d91',
+  'sacred-site': '#733f9d',
+  'pilgrim-rest': '#08786b',
+  accommodation: '#9a5812',
+  viewpoint: '#b13554',
 };
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -58,7 +60,9 @@ function isPoiRecord(value: unknown): value is PoiRecord {
   return isNonEmptyString(value.id)
     && isNonEmptyString(value.name)
     && typeof value.category === 'string'
-    && Object.hasOwn(categoryStyle, value.category)
+    && Object.hasOwn(categoryColors, value.category)
+    && typeof value.iconKey === 'string'
+    && Object.hasOwn(poiIcons, value.iconKey)
     && isNonEmptyString(value.description)
     && (value.henroHubUrl === undefined || isNonEmptyString(value.henroHubUrl));
 }
@@ -85,10 +89,10 @@ export function getPoiRecord(entity: Entity, time: JulianDate): PoiRecord | unde
   const properties: unknown = entity.properties?.getValue(time);
   if (!isPoiRecord(properties)) return undefined;
 
-  const { id, name, category, description, henroHubUrl } = properties;
+  const { id, name, category, iconKey, description, henroHubUrl } = properties;
   return henroHubUrl === undefined
-    ? { id, name, category, description }
-    : { id, name, category, description, henroHubUrl };
+    ? { id, name, category, iconKey, description }
+    : { id, name, category, iconKey, description, henroHubUrl };
 }
 
 export async function loadPois(viewer: Viewer, url: string): Promise<GeoJsonDataSource> {
@@ -98,18 +102,22 @@ export async function loadPois(viewer: Viewer, url: string): Promise<GeoJsonData
   const collection = validatePoiGeoJson(await response.json() as unknown);
   const source = await GeoJsonDataSource.load(collection, { clampToGround: true });
   const pinBuilder = new PinBuilder();
-  const pins = new Map<PoiCategory, HTMLCanvasElement>();
+  const pins = new Map<string, HTMLCanvasElement>();
   const time = JulianDate.now();
 
   for (const entity of source.entities.values) {
     const record = getPoiRecord(entity, time);
     if (!record) throw new Error('Invalid POI GeoJSON');
 
-    const style = categoryStyle[record.category];
-    let pin = pins.get(record.category);
+    const pinKey = `${record.category}:${record.iconKey}`;
+    let pin = pins.get(pinKey);
     if (!pin) {
-      pin = pinBuilder.fromText(style.letter, Color.fromCssColorString(style.color), 40);
-      pins.set(record.category, pin);
+      pin = await pinBuilder.fromUrl(
+        poiIcons[record.iconKey].url,
+        Color.fromCssColorString(categoryColors[record.category]),
+        40,
+      );
+      pins.set(pinKey, pin);
     }
 
     entity.billboard = new BillboardGraphics({

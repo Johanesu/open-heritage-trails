@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { TrailMetadata } from '../types/trail';
 import TrailPanel from './TrailPanel';
@@ -33,5 +33,20 @@ describe('TrailPanel', () => {
     expect(screen.getByText('31 m')).toBeInTheDocument();
     expect(screen.getByText('759 m')).toBeInTheDocument();
     expect(screen.getByText('© OpenStreetMap contributors')).toBeInTheDocument();
+  });
+
+  it('collapses details while retaining branding and route identity, then expands again', () => {
+    render(<TrailPanel metadata={metadata} />);
+    const toggle = screen.getByRole('button', { name: 'Collapse trail information' });
+    fireEvent.click(toggle);
+
+    expect(screen.getByRole('button', { name: 'Expand trail information' })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByText('Open Heritage Trails')).toBeInTheDocument();
+    expect(screen.getByText('T11 Fujiidera → T12 Shōsanji')).toBeInTheDocument();
+    expect(screen.queryByText('1,548 m')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Expand trail information' }));
+    expect(screen.getByRole('button', { name: 'Collapse trail information' })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('1,548 m')).toBeInTheDocument();
   });
 });

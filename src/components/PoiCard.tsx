@@ -9,21 +9,7 @@ function PoiCard({ poi, onClose }: PoiCardProps) {
   return (
     <aside
       aria-label="POI details"
-      style={{
-        background: 'rgba(250, 251, 247, 0.97)',
-        borderRadius: '0.75rem',
-        bottom: '1rem',
-        boxShadow: '0 3px 16px rgba(0, 0, 0, 0.25)',
-        color: '#1c2b2a',
-        maxHeight: 'calc(100vh - 2rem)',
-        maxWidth: 'calc(100vw - 2rem)',
-        overflowY: 'auto',
-        padding: '1rem',
-        position: 'absolute',
-        right: '1rem',
-        width: '21rem',
-        zIndex: 2,
-      }}
+      className="map-card poi-card"
     >
       <button
         aria-label="Close POI details"
