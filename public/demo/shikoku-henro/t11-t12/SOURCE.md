@@ -31,3 +31,17 @@ For the initial Cesium prototype, the route does not require this profile to sit
 - Elevation coverage reported by the export: **100%**
 
 These figures are treated as Henro Hub-derived reference data for development; source attribution remains governed by the underlying route and DEM datasets.
+
+## POI demonstration dataset
+
+The Task 6 demonstration POIs in `pois.geojson` were selected by the project owner from the Henro Hub Notion `Shikoku DataBase` for the T11 Fujiidera → T12 Shōsan-ji section and nearby sacred landscape.
+
+Coordinates use the explicit Henro Hub `GPS` field rather than Google-enriched `place:Location` values. This is deliberate: for several trail-side and mountain features, the Google place location differs substantially from the project-curated GPS location.
+
+The current demonstration set contains 12 approved records spanning temples, sacred sites, pilgrim rest infrastructure, accommodation, and a viewpoint/rest landmark. Descriptions are concise adaptations of existing Henro Hub English descriptions, raw notes, and Shōsan-ji/Okunoin research; no new cultural claims were invented for the demo.
+
+Two details are intentional:
+
+- `Ryusui-an` and `Pilgrim Rest Area Ryūsui-an` are separate records representing the sacred site and the nearby enclosed pilgrim hut.
+- `Zaō-Dai Gongen` lies beyond Temple 12 on the summit continuation and is included to demonstrate sacred geography around, not only directly on, the mapped trail.
+
