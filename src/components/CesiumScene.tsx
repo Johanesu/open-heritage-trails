@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Cartographic, Math as CesiumMath, SceneMode, type GeoJsonDataSource, type Viewer } from 'cesium';
+import { Cartographic, Entity, Math as CesiumMath, SceneMode, ScreenSpaceEventType, type Cartesian2, type GeoJsonDataSource, type Viewer } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 import { fitTrail, flyToEndpoint } from '../cesium/camera';
 import { createViewer } from '../cesium/createViewer';
+import { getPoiRecord, loadPois, type PoiRecord } from '../cesium/loadPois';
 import { loadTrail } from '../cesium/loadTrail';
 import { getTrailGeoJsonUrl } from '../data/loadDemo';
+import PoiCard from './PoiCard';
 import ViewControls from './ViewControls';
 
 function CesiumScene() {
@@ -13,6 +15,7 @@ function CesiumScene() {
   const removeMorphListenerRef = useRef<(() => void) | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [selectedPoi, setSelectedPoi] = useState<PoiRecord | null>(null);
 
   function focusEndpoint(last: boolean) {
     const scene = sceneRef.current;
@@ -81,8 +84,21 @@ function CesiumScene() {
         createdViewer,
         getTrailGeoJsonUrl(),
       );
+      const poiSource = await loadPois(
+        createdViewer,
+        '/demo/shikoku-henro/t11-t12/pois.geojson',
+      );
 
       if (!disposed) {
+        createdViewer.screenSpaceEventHandler.setInputAction((movement: { position: Cartesian2 }) => {
+          const picked = createdViewer.scene.pick(movement.position);
+          const entity = picked?.id;
+          setSelectedPoi(
+            entity instanceof Entity && poiSource.entities.contains(entity)
+              ? getPoiRecord(entity, createdViewer.clock.currentTime) ?? null
+              : null,
+          );
+        }, ScreenSpaceEventType.LEFT_CLICK);
         await fitTrail(createdViewer, trailSource);
         sceneRef.current = { viewer: createdViewer, trailSource };
         setReady(true);
@@ -139,6 +155,7 @@ function CesiumScene() {
           <p>{error}</p>
         </div>
       ) : null}
+      {selectedPoi ? <PoiCard poi={selectedPoi} onClose={() => setSelectedPoi(null)} /> : null}
       <ViewControls
         disabled={!ready}
         on3D={() => switchMode(SceneMode.SCENE3D)}
