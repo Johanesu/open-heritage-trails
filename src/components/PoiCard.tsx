@@ -13,11 +13,11 @@ function PoiCard({ poi, onClose }: PoiCardProps) {
     >
       <button
         aria-label="Close POI details"
+        className="poi-card-close"
         onClick={onClose}
-        style={{ float: 'right' }}
         type="button"
       >
-        Close
+        <span aria-hidden="true">×</span>
       </button>
       <p style={{ fontSize: '0.8rem', fontWeight: 700, margin: '0 0 0.5rem' }}>{poi.category}</p>
       <h2 style={{ fontSize: '1.1rem', margin: '0 0 0.75rem' }}>{poi.name}</h2>

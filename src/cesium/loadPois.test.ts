@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getPoiRecord, loadPois, validatePoiGeoJson } from './loadPois';
+import { getPoiRecord, loadPois, setPoiLabelVisibility, setPoiSceneMode, validatePoiGeoJson } from './loadPois';
 
 const cesiumMocks = vi.hoisted(() => ({
-  fromUrl: vi.fn(async (url: string) => ({ url })),
+  fromUrl: vi.fn(async (url: string, _color: unknown, _size: number) => ({ url })),
   load: vi.fn(),
 }));
 
@@ -11,13 +11,15 @@ vi.mock('cesium', () => ({
   BillboardGraphics: vi.fn(function BillboardGraphics(options) { return options; }),
   Cartesian2: vi.fn(function Cartesian2(x, y) { return { x, y }; }),
   Color: { BLACK: 'black', WHITE: 'white', fromCssColorString: vi.fn((value: string) => value) },
+  ConstantProperty: vi.fn(function ConstantProperty(value) { return { getValue: () => value }; }),
   GeoJsonDataSource: { load: cesiumMocks.load },
-  HeightReference: { CLAMP_TO_GROUND: 'clamp-to-ground' },
+  HeightReference: { CLAMP_TO_GROUND: 'clamp-to-ground', NONE: 'none' },
   HorizontalOrigin: { CENTER: 'center', LEFT: 'left', RIGHT: 'right' },
   JulianDate: { now: vi.fn(() => 'now') },
   LabelGraphics: vi.fn(function LabelGraphics(options) { return options; }),
   LabelStyle: { FILL_AND_OUTLINE: 'fill-and-outline' },
   PinBuilder: vi.fn(function PinBuilder() { return { fromUrl: cesiumMocks.fromUrl }; }),
+  SceneMode: { SCENE2D: 2, SCENE3D: 3 },
   VerticalOrigin: { BOTTOM: 'bottom' },
 }));
 
@@ -78,26 +80,31 @@ describe('POI GeoJSON', () => {
       billboard: undefined as unknown,
       label: undefined as undefined | {
         horizontalOrigin: string;
-        pixelOffset: { y: number };
+        pixelOffset: { x: number; y: number };
         text: string;
+        heightReference: string;
+        show: { getValue: () => boolean };
       },
     }));
-    const source = { entities: { values: entities } };
+    const source = { show: true, entities: { values: entities } };
     cesiumMocks.load.mockResolvedValue(source);
     const add = vi.fn().mockResolvedValue(source);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => approved }));
 
     await expect(loadPois({ dataSources: { add } } as never,
-      '/demo/shikoku-henro/t11-t12/pois.geojson')).resolves.toBe(source);
+      '/demo/shikoku-henro/t11-t12/pois.geojson', true)).resolves.toBe(source);
 
     expect(cesiumMocks.load).toHaveBeenCalledWith(collection, { clampToGround: true });
     expect(add).toHaveBeenCalledWith(source);
+    expect(source.show).toBe(false);
     expect(entities.every((entity) => entity.billboard !== undefined)).toBe(true);
     expect(entities[0].billboard).toMatchObject({
       heightReference: 'clamp-to-ground',
       disableDepthTestDistance: Infinity,
       image: { url: '/icons/tabler/temple.svg' },
+      scale: 44 / 128,
     });
+    expect(cesiumMocks.fromUrl.mock.calls[0][2]).toBe(128);
     expect(cesiumMocks.fromUrl.mock.calls.map(([url]) => url)).toEqual(
       expect.arrayContaining([
         '/icons/tabler/temple.svg',
@@ -116,13 +123,43 @@ describe('POI GeoJSON', () => {
     });
     expect(entities[10].label).toMatchObject({ text: 'T12 Shōsan-ji' });
     expect(entities[9].label).toMatchObject({ text: 'Ryūō-kutsu' });
-    expect(entities[0].label!.pixelOffset.y).toBeLessThan(-40);
-    expect(entities[0].label!.horizontalOrigin).toBe('right');
-    expect(entities[2].label!.horizontalOrigin).toBe('left');
+    expect(entities[0].label!.pixelOffset).toEqual({ x: 0, y: -54 });
+    expect(entities[0].label!.horizontalOrigin).toBe('center');
+    expect(entities[2].label!.horizontalOrigin).toBe('center');
     expect(entities[2].label!.text).toContain('\n');
     expect(entities[2].label!.text.replaceAll('\n', ' ')).toBe(
       'Fujii-dera Okunoin — Dainichi Nyorai Statue',
     );
+  });
+
+  it('keeps temple labels visible at overview distance and reveals other labels on hover or close zoom', () => {
+    const collection = validatePoiGeoJson(approved);
+    const entities = collection.features.map((feature) => ({
+      properties: { getValue: () => feature.properties },
+      label: { show: { getValue: () => true } },
+    }));
+    const source = { entities: { values: entities } };
+
+    setPoiLabelVisibility(source as never, 15000, undefined, 'now' as never);
+    expect(entities.map((entity) => entity.label.show.getValue())).toEqual([
+      true, false, false, false, false, false, false, false, false, false, true, false,
+    ]);
+    setPoiLabelVisibility(source as never, 15000, entities[9] as never, 'now' as never);
+    expect(entities[9].label.show.getValue()).toBe(true);
+    setPoiLabelVisibility(source as never, 3000, undefined, 'now' as never);
+    expect(entities.every((entity) => entity.label.show.getValue())).toBe(true);
+  });
+
+  it('uses unclamped billboards in 2D and restores terrain clamping in 3D', () => {
+    const entity = { billboard: { heightReference: { getValue: () => 'clamp-to-ground' } }, label: { heightReference: { getValue: () => 'clamp-to-ground' } } };
+    const source = { entities: { values: [entity] } };
+
+    setPoiSceneMode(source as never, 2 as never);
+    expect(entity.billboard.heightReference.getValue()).toBe('none');
+    expect(entity.label.heightReference.getValue()).toBe('none');
+    setPoiSceneMode(source as never, 3 as never);
+    expect(entity.billboard.heightReference.getValue()).toBe('clamp-to-ground');
+    expect(entity.label.heightReference.getValue()).toBe('clamp-to-ground');
   });
 
   it('exposes only approved card fields from a picked entity', () => {

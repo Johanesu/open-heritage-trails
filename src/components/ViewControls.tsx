@@ -31,15 +31,6 @@ function ViewControls({
           disabled={disabled}
           key={label}
           onClick={onClick}
-          style={{
-            background: '#fafbf7',
-            border: '1px solid #81938b',
-            borderRadius: '0.4rem',
-            color: '#1c2b2a',
-            cursor: disabled ? 'default' : 'pointer',
-            font: '600 0.9rem system-ui, sans-serif',
-            padding: '0.45rem 0.65rem',
-          }}
           type="button"
         >
           {label}

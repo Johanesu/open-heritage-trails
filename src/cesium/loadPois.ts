@@ -2,6 +2,7 @@ import {
   BillboardGraphics,
   Cartesian2,
   Color,
+  ConstantProperty,
   GeoJsonDataSource,
   HeightReference,
   HorizontalOrigin,
@@ -9,6 +10,7 @@ import {
   LabelGraphics,
   LabelStyle,
   PinBuilder,
+  SceneMode,
   VerticalOrigin,
   type Entity,
   type Viewer,
@@ -50,18 +52,9 @@ const categoryColors: Record<PoiCategory, string> = {
   viewpoint: '#b13554',
 };
 
-// Screen-space spacing for the close pairs at the two temples and Ryūsui-an.
-const labelPlacements: Record<string, { x: number; y: number; origin: HorizontalOrigin }> = {
-  'sdb-101': { x: -24, y: -70, origin: HorizontalOrigin.RIGHT },
-  'sdb-1009': { x: 24, y: -48, origin: HorizontalOrigin.LEFT },
-  'sdb-151': { x: 24, y: -96, origin: HorizontalOrigin.LEFT },
-  'sdb-163': { x: -24, y: -65, origin: HorizontalOrigin.RIGHT },
-  'sdb-422': { x: 24, y: -60, origin: HorizontalOrigin.LEFT },
-  'sdb-162': { x: -24, y: -72, origin: HorizontalOrigin.RIGHT },
-  'sdb-405': { x: 24, y: -52, origin: HorizontalOrigin.LEFT },
-  'sdb-77': { x: -24, y: -74, origin: HorizontalOrigin.RIGHT },
-  'sdb-139': { x: -24, y: -54, origin: HorizontalOrigin.RIGHT },
-};
+const PIN_SIZE = 128;
+const PIN_SCALE = 44 / PIN_SIZE;
+const CLOSE_LABEL_HEIGHT = 7_000;
 
 function wrapLabel(name: string): string {
   if (name.length <= 22) return name;
@@ -118,7 +111,35 @@ export function getPoiRecord(entity: Entity, time: JulianDate): PoiRecord | unde
     : { id, name, category, iconKey, description, henroHubUrl };
 }
 
-export async function loadPois(viewer: Viewer, url: string): Promise<GeoJsonDataSource> {
+export function setPoiLabelVisibility(
+  source: GeoJsonDataSource,
+  cameraHeight: number,
+  hovered: Entity | undefined,
+  time: JulianDate,
+): void {
+  for (const entity of source.entities.values) {
+    const id = getPoiRecord(entity, time)?.id;
+    if (entity.label && id) {
+      entity.label.show = new ConstantProperty(id === 'sdb-101' || id === 'sdb-77'
+        || cameraHeight <= CLOSE_LABEL_HEIGHT || entity === hovered);
+    }
+  }
+}
+
+export function setPoiSceneMode(source: GeoJsonDataSource, mode: SceneMode): void {
+  const heightReference = mode === SceneMode.SCENE2D
+    ? HeightReference.NONE : HeightReference.CLAMP_TO_GROUND;
+  for (const entity of source.entities.values) {
+    if (entity.billboard) entity.billboard.heightReference = new ConstantProperty(heightReference);
+    if (entity.label) entity.label.heightReference = new ConstantProperty(heightReference);
+  }
+}
+
+export async function loadPois(
+  viewer: Viewer,
+  url: string,
+  initiallyHidden = false,
+): Promise<GeoJsonDataSource> {
   const response = await fetch(url);
   if (!response.ok) throw new Error('Unable to load POI GeoJSON');
 
@@ -138,18 +159,18 @@ export async function loadPois(viewer: Viewer, url: string): Promise<GeoJsonData
       pin = await pinBuilder.fromUrl(
         poiIcons[record.iconKey].url,
         Color.fromCssColorString(categoryColors[record.category]),
-        44,
+        PIN_SIZE,
       );
       pins.set(pinKey, pin);
     }
 
     entity.billboard = new BillboardGraphics({
       image: pin,
+      scale: PIN_SCALE,
       heightReference: HeightReference.CLAMP_TO_GROUND,
       verticalOrigin: VerticalOrigin.BOTTOM,
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
     });
-    const placement = labelPlacements[record.id];
     entity.label = new LabelGraphics({
       text: record.id === 'sdb-101' ? 'T11 Fujii-dera'
         : record.id === 'sdb-77' ? 'T12 Shōsan-ji' : wrapLabel(record.name),
@@ -158,14 +179,15 @@ export async function loadPois(viewer: Viewer, url: string): Promise<GeoJsonData
       outlineColor: Color.BLACK,
       outlineWidth: 3,
       style: LabelStyle.FILL_AND_OUTLINE,
-      pixelOffset: new Cartesian2(placement?.x ?? 0, placement?.y ?? -54),
-      horizontalOrigin: placement?.origin ?? HorizontalOrigin.CENTER,
+      pixelOffset: new Cartesian2(0, -54),
+      horizontalOrigin: HorizontalOrigin.CENTER,
       verticalOrigin: VerticalOrigin.BOTTOM,
       heightReference: HeightReference.CLAMP_TO_GROUND,
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
     });
   }
 
+  if (initiallyHidden) source.show = false;
   await viewer.dataSources.add(source);
   return source;
 }

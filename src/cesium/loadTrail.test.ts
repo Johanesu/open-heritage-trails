@@ -15,12 +15,12 @@ describe('loadTrail', () => {
   afterEach(() => vi.clearAllMocks());
 
   it('loads only the terrain-clamped route, leaving temples to the POI layer', async () => {
-    const routeSource = { entities: { values: [] } };
+    const routeSource = { show: true, entities: { values: [] } };
     cesiumMocks.load.mockResolvedValue(routeSource);
     const add = vi.fn().mockResolvedValue(routeSource);
     const viewer = { dataSources: { add } };
 
-    await expect(loadTrail(viewer as never, '/demo/shikoku-henro/t11-t12/trail.geojson'))
+    await expect(loadTrail(viewer as never, '/demo/shikoku-henro/t11-t12/trail.geojson', true))
       .resolves.toBe(routeSource);
 
     expect(cesiumMocks.load).toHaveBeenCalledOnce();
@@ -30,5 +30,6 @@ describe('loadTrail', () => {
     );
     expect(add).toHaveBeenCalledOnce();
     expect(add).toHaveBeenCalledWith(routeSource);
+    expect(routeSource.show).toBe(false);
   });
 });

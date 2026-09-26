@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fitTrail, flyToEndpoint, playTrailIntro } from './camera';
+import { fitTrail, flyToEndpoint, focusEndpoint2D, playTrailIntro, waitForGlobeReady } from './camera';
 
 const cesiumMocks = vi.hoisted(() => ({
   fromDegrees: vi.fn((longitude, latitude, height) => ({ longitude, latitude, height })),
@@ -21,6 +21,8 @@ vi.mock('cesium', () => ({
   }) },
   HeadingPitchRange: cesiumMocks.headingPitchRange,
   Math: { toRadians: cesiumMocks.toRadians },
+  Rectangle: { fromCartesianArray: vi.fn(() => ({ west: 1, south: 2, east: 3, north: 4 })) },
+  SceneMode: { SCENE2D: 2, SCENE3D: 3 },
   sampleTerrainMostDetailed: cesiumMocks.sampleTerrain,
 }));
 
@@ -31,9 +33,9 @@ const route = Array.from({ length: 41 }, (_, index) => ({
 const source = { entities: { values: [{ polyline: { positions: { getValue: () => route } } }] } };
 
 describe('camera helpers', () => {
-  it('fits the whole route with an explicit, closer oblique range', async () => {
+  it('fits the whole route looking from T11 toward T12', async () => {
     const flyTo = vi.fn().mockResolvedValue(true);
-    const viewer = { flyTo, clock: { currentTime: 'now' }, canvas: { clientWidth: 1200, clientHeight: 800 } };
+    const viewer = { flyTo, scene: { mode: 3 }, clock: { currentTime: 'now' }, canvas: { clientWidth: 1200, clientHeight: 800 } };
 
     await fitTrail(viewer as never, source as never);
 
@@ -41,8 +43,26 @@ describe('camera helpers', () => {
       duration: 1.5,
       offset: expect.objectContaining({ pitch: (-35 * Math.PI) / 180, range: expect.any(Number) }),
     });
+    expect(flyTo.mock.calls[0][1].offset.heading).toBeGreaterThan(Math.PI);
+    expect(flyTo.mock.calls[0][1].offset.heading).toBeLessThan(5 * Math.PI / 4);
     expect(flyTo.mock.calls[0][1].offset.range).toBeGreaterThan(500);
     expect(flyTo.mock.calls[0][1].offset.range).toBeLessThan(2000);
+  });
+
+  it('fits the geographic route bounds directly in 2D', async () => {
+    const flyTo = vi.fn();
+    const cameraFlyTo = vi.fn((options) => options.complete());
+    const viewer = {
+      flyTo, camera: { flyTo: cameraFlyTo }, scene: { mode: 2 }, clock: { currentTime: 'now' },
+      canvas: { clientWidth: 1200, clientHeight: 800 },
+    };
+
+    await fitTrail(viewer as never, source as never);
+
+    expect(flyTo).not.toHaveBeenCalled();
+    expect(cameraFlyTo.mock.calls[0][0].destination).toEqual({
+      west: 0.6, south: 1.6, east: 3.4, north: 4.4,
+    });
   });
 
   it('looks from T11 down the first route section, with T11 in the foreground', async () => {
@@ -77,20 +97,53 @@ describe('camera helpers', () => {
     expect(heading).toBeLessThan(Math.PI / 2);
   });
 
+  it('centers a temple segment top-down in 2D', async () => {
+    const flyToBoundingSphere = vi.fn((_, options) => options.complete());
+    const viewer = { camera: { flyToBoundingSphere } };
+
+    await focusEndpoint2D(viewer as never, route as never, true);
+
+    const [sphere, options] = flyToBoundingSphere.mock.calls[0];
+    expect(sphere.radius).toBe(500);
+    expect(options.offset.heading).toBe(0);
+    expect(options.offset.pitch).toBe(-Math.PI / 2);
+  });
+
+  it('waits for two rendered frames with loaded globe tiles', async () => {
+    let render: (() => void) | undefined;
+    const remove = vi.fn();
+    const scene = {
+      globe: { tilesLoaded: false },
+      postRender: { addEventListener: vi.fn((callback) => { render = callback; return remove; }) },
+    };
+    const ready = waitForGlobeReady(scene as never, 1000);
+    render!();
+    scene.globe.tilesLoaded = true;
+    render!();
+    render!();
+
+    await expect(ready).resolves.toBe(true);
+    expect(remove).toHaveBeenCalledOnce();
+  });
+
   it('starts at the globe, flies toward Shikoku, then settles on the route', async () => {
     const order: string[] = [];
     const viewer = {
       clock: { currentTime: 'now' }, canvas: { clientWidth: 1200, clientHeight: 800 },
       flyTo: vi.fn().mockImplementation(async () => { order.push('route'); return true; }),
+      scene: { globe: { tilesLoaded: true }, postRender: { addEventListener: vi.fn((callback) => {
+        queueMicrotask(() => { callback(); callback(); });
+        return vi.fn();
+      }) } },
       camera: {
         setView: vi.fn(() => order.push('globe')),
         flyTo: vi.fn((options) => { order.push('Shikoku'); options.complete(); }),
       },
     };
 
-    await playTrailIntro(viewer as never, source as never, false);
+    await playTrailIntro(viewer as never, source as never, false, () => order.push('reveal'));
 
-    expect(order).toEqual(['globe', 'Shikoku', 'route']);
+    expect(order).toEqual(['globe', 'Shikoku', 'reveal', 'route']);
     expect(viewer.flyTo.mock.calls[0][1].duration).toBeGreaterThan(0);
   });
 
@@ -98,13 +151,19 @@ describe('camera helpers', () => {
     const viewer = {
       clock: { currentTime: 'now' }, canvas: { clientWidth: 1200, clientHeight: 800 },
       flyTo: vi.fn().mockResolvedValue(true),
+      scene: { globe: { tilesLoaded: true }, postRender: { addEventListener: vi.fn((callback) => {
+        queueMicrotask(() => { callback(); callback(); });
+        return vi.fn();
+      }) } },
       camera: { setView: vi.fn(), flyTo: vi.fn() },
     };
 
-    await playTrailIntro(viewer as never, source as never, true);
+    const reveal = vi.fn();
+    await playTrailIntro(viewer as never, source as never, true, reveal);
 
     expect(viewer.camera.setView).not.toHaveBeenCalled();
     expect(viewer.camera.flyTo).not.toHaveBeenCalled();
     expect(viewer.flyTo.mock.calls[0][1].duration).toBe(0);
+    expect(reveal).toHaveBeenCalledOnce();
   });
 });

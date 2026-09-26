@@ -70,14 +70,21 @@ summary:focus-visible {
   justify-content: space-between;
 }
 
-.poi-card button {
-  background: #fff;
-  border: 1px solid #81938b;
+.poi-card-close {
+  align-items: center;
+  background: transparent;
+  border: 0;
   border-radius: 0.4rem;
   color: #1c2b2a;
   cursor: pointer;
-  font: 600 0.78rem system-ui, sans-serif;
-  padding: 0.3rem 0.45rem;
+  display: inline-flex;
+  font: 600 1.5rem/1 system-ui, sans-serif;
+  height: 2rem;
+  justify-content: center;
+  position: absolute;
+  right: 0.65rem;
+  top: 0.65rem;
+  width: 2rem;
 }
 
 .trail-disclosure {
@@ -93,6 +100,20 @@ summary:focus-visible {
   justify-content: center;
   margin: -0.45rem -0.45rem 0 0;
   width: 2.25rem;
+}
+
+.trail-disclosure,
+.poi-card-close,
+.map-extra summary,
+.view-controls button {
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.trail-disclosure:hover,
+.poi-card-close:hover,
+.map-extra summary:hover,
+.view-controls button:hover:not(:disabled) {
+  background: #e5eee8;
 }
 
 .trail-chevron {
@@ -152,6 +173,12 @@ summary:focus-visible {
 
 .poi-card {
   overflow-y: auto;
+  position: relative;
+}
+
+.poi-card > p:first-of-type,
+.poi-card h2 {
+  padding-right: 2rem;
 }
 
 .view-controls {
@@ -164,6 +191,24 @@ summary:focus-visible {
   right: 4rem;
   top: 1rem;
   z-index: 2;
+}
+
+.view-controls button {
+  background: #fafbf7;
+  border: 1px solid #81938b;
+  border-radius: 0.4rem;
+  color: #1c2b2a;
+  cursor: pointer;
+  font: 600 0.9rem system-ui, sans-serif;
+  padding: 0.45rem 0.65rem;
+}
+
+.view-controls button:hover:not(:disabled) {
+  border-color: #476f5d;
+}
+
+.view-controls button:disabled {
+  cursor: default;
 }
 
 .cesium-viewer-toolbar {
@@ -194,6 +239,7 @@ summary:focus-visible {
 }
 
 .map-extra summary {
+  border-radius: 0.25rem;
   cursor: pointer;
   font-weight: 700;
 }
@@ -243,17 +289,17 @@ summary:focus-visible {
   }
 
   .view-controls {
-    bottom: 2.75rem;
+    bottom: 2.45rem;
     justify-content: center;
-    left: 3.25rem;
-    max-width: calc(100vw - 3.75rem);
+    left: 3.75rem;
+    max-width: calc(100vw - 4.25rem);
     right: 0.5rem;
     top: auto;
   }
 
   .map-extras {
     align-items: flex-end;
-    bottom: 6.25rem;
+    bottom: 5.3rem;
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: flex-end;
@@ -264,18 +310,23 @@ summary:focus-visible {
   }
 
   .map-extra {
-    max-height: min(25dvh, 13rem);
+    max-height: min(42dvh, 20rem);
     max-width: calc(100vw - 1rem);
     overflow-y: auto;
-    width: max-content;
-  }
-
-  .map-extra[open] {
     width: 11rem;
   }
 
+  .poi-legend li {
+    margin-top: 0.2rem;
+  }
+
+  .poi-legend img {
+    height: 20px;
+    width: 20px;
+  }
+
   .cesium-viewer-toolbar {
-    bottom: 2.75rem;
+    bottom: 2.45rem;
     left: 0.5rem;
     right: auto;
     top: auto;
@@ -291,6 +342,12 @@ summary:focus-visible {
     right: auto;
     top: auto;
     transform-origin: 1rem calc(100% + 0.5rem);
+  }
+
+  .cesium-viewer .cesium-viewer-bottom {
+    /* Cesium writes these positions inline while laying out credits. */
+    bottom: 0.45rem !important;
+    left: 0.5rem !important;
   }
 }
 

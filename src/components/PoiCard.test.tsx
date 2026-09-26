@@ -17,7 +17,10 @@ describe('PoiCard', () => {
     expect(screen.getByRole('link', { name: 'View in Henro Hub' })).toHaveAttribute(
       'href', 'https://henro.app/places/fujii-dera',
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Close POI details' }));
+    const close = screen.getByRole('button', { name: 'Close POI details' });
+    expect(close).toHaveTextContent('×');
+    expect(screen.queryByText('Close')).not.toBeInTheDocument();
+    fireEvent.click(close);
     expect(onClose).toHaveBeenCalledOnce();
   });
 

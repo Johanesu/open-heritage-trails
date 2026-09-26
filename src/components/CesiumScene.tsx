@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Entity, SceneMode, ScreenSpaceEventType, type Cartesian2, type GeoJsonDataSource, type Viewer } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
-import { fitTrail, flyToEndpoint, playTrailIntro, showIntroGlobe } from '../cesium/camera';
+import { fitTrail, flyToEndpoint, focusEndpoint2D, playTrailIntro, showIntroGlobe } from '../cesium/camera';
 import { createViewer } from '../cesium/createViewer';
-import { getPoiRecord, loadPois, type PoiRecord } from '../cesium/loadPois';
+import { getPoiRecord, loadPois, setPoiLabelVisibility, setPoiSceneMode, type PoiRecord } from '../cesium/loadPois';
 import { loadTrail } from '../cesium/loadTrail';
 import { getTrailGeoJsonUrl } from '../data/loadDemo';
 import ViewControls from './ViewControls';
@@ -14,7 +14,7 @@ interface CesiumSceneProps {
 
 function CesiumScene({ onSelectPoi }: CesiumSceneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<{ viewer: Viewer; trailSource: GeoJsonDataSource } | null>(null);
+  const sceneRef = useRef<{ viewer: Viewer; trailSource: GeoJsonDataSource; poiSource: GeoJsonDataSource } | null>(null);
   const removeMorphListenerRef = useRef<(() => void) | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -26,19 +26,24 @@ function CesiumScene({ onSelectPoi }: CesiumSceneProps) {
     const positions = scene.trailSource.entities.values[0]?.polyline?.positions?.getValue(
       scene.viewer.clock.currentTime,
     );
-    if (positions?.length) void flyToEndpoint(scene.viewer, positions, last);
+    if (positions?.length) {
+      void (scene.viewer.scene.mode === SceneMode.SCENE2D
+        ? focusEndpoint2D(scene.viewer, positions, last)
+        : flyToEndpoint(scene.viewer, positions, last));
+    }
   }
 
   function switchMode(mode: typeof SceneMode.SCENE2D | typeof SceneMode.SCENE3D) {
     const current = sceneRef.current;
     if (!current) return;
 
-    const { viewer, trailSource } = current;
+    const { viewer, trailSource, poiSource } = current;
     const scene = viewer.scene;
     removeMorphListenerRef.current?.();
     removeMorphListenerRef.current = null;
 
     if (scene.mode === mode) {
+      setPoiSceneMode(poiSource, mode);
       void fitTrail(viewer, trailSource);
       return;
     }
@@ -46,6 +51,7 @@ function CesiumScene({ onSelectPoi }: CesiumSceneProps) {
     const removeListener = scene.morphComplete.addEventListener(() => {
       removeListener();
       removeMorphListenerRef.current = null;
+      setPoiSceneMode(poiSource, mode);
       void fitTrail(viewer, trailSource);
     });
     removeMorphListenerRef.current = removeListener;
@@ -63,6 +69,8 @@ function CesiumScene({ onSelectPoi }: CesiumSceneProps) {
 
     let viewer: Viewer | undefined;
     let disposed = false;
+    let removeRenderListener: (() => void) | undefined;
+    let removePointerLeave: (() => void) | undefined;
 
     async function initializeScene(sceneContainer: HTMLElement) {
       const createdViewer = await createViewer(sceneContainer);
@@ -78,13 +86,49 @@ function CesiumScene({ onSelectPoi }: CesiumSceneProps) {
       const trailSource = await loadTrail(
         createdViewer,
         getTrailGeoJsonUrl(),
+        true,
       );
       const poiSource = await loadPois(
         createdViewer,
         '/demo/shikoku-henro/t11-t12/pois.geojson',
+        true,
       );
 
       if (!disposed) {
+        const scene = createdViewer.scene;
+        let hovered: Entity | undefined;
+        let near = scene.camera.positionCartographic.height <= 7_000;
+        const refreshLabels = () => setPoiLabelVisibility(
+          poiSource, scene.camera.positionCartographic.height, hovered, createdViewer.clock.currentTime,
+        );
+        refreshLabels();
+        removeRenderListener = scene.postRender.addEventListener(() => {
+          const nextNear = scene.camera.positionCartographic.height <= 7_000;
+          if (nextNear !== near) {
+            near = nextNear;
+            refreshLabels();
+          }
+        });
+        if (window.matchMedia?.('(hover: hover)').matches) {
+          createdViewer.screenSpaceEventHandler.setInputAction((movement: { endPosition: Cartesian2 }) => {
+            const picked = scene.pick(movement.endPosition);
+            const entity = picked?.id;
+            const nextHovered = entity instanceof Entity && poiSource.entities.contains(entity)
+              ? entity : undefined;
+            if (nextHovered !== hovered) {
+              hovered = nextHovered;
+              refreshLabels();
+            }
+          }, ScreenSpaceEventType.MOUSE_MOVE);
+          const clearHover = () => {
+            if (hovered) {
+              hovered = undefined;
+              refreshLabels();
+            }
+          };
+          sceneContainer.addEventListener('pointerleave', clearHover);
+          removePointerLeave = () => sceneContainer.removeEventListener('pointerleave', clearHover);
+        }
         createdViewer.screenSpaceEventHandler.setInputAction((movement: { position: Cartesian2 }) => {
           const picked = createdViewer.scene.pick(movement.position);
           const entity = picked?.id;
@@ -94,9 +138,14 @@ function CesiumScene({ onSelectPoi }: CesiumSceneProps) {
               : null,
           );
         }, ScreenSpaceEventType.LEFT_CLICK);
-        await playTrailIntro(createdViewer, trailSource, reducedMotion);
+        await playTrailIntro(createdViewer, trailSource, reducedMotion, () => {
+          if (!disposed) {
+            trailSource.show = true;
+            poiSource.show = true;
+          }
+        });
         if (disposed) return;
-        sceneRef.current = { viewer: createdViewer, trailSource };
+        sceneRef.current = { viewer: createdViewer, trailSource, poiSource };
         setReady(true);
       }
     }
@@ -115,6 +164,8 @@ function CesiumScene({ onSelectPoi }: CesiumSceneProps) {
       disposed = true;
       removeMorphListenerRef.current?.();
       removeMorphListenerRef.current = null;
+      removeRenderListener?.();
+      removePointerLeave?.();
       sceneRef.current = null;
       viewer?.destroy();
     };
