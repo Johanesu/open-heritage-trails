@@ -43,10 +43,10 @@ function App() {
           </aside>
         )}
         {selectedPoi ? <PoiCard poi={selectedPoi} onClose={() => setSelectedPoi(null)} /> : null}
-        <div className="map-extras">
-          <PoiLegend />
-          <AboutBadge />
-        </div>
+      </div>
+      <div className="map-extras">
+        <PoiLegend />
+        <AboutBadge />
       </div>
     </main>
   );

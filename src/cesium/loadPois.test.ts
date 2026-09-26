@@ -9,10 +9,14 @@ const cesiumMocks = vi.hoisted(() => ({
 
 vi.mock('cesium', () => ({
   BillboardGraphics: vi.fn(function BillboardGraphics(options) { return options; }),
-  Color: { fromCssColorString: vi.fn((value: string) => value) },
+  Cartesian2: vi.fn(function Cartesian2(x, y) { return { x, y }; }),
+  Color: { BLACK: 'black', WHITE: 'white', fromCssColorString: vi.fn((value: string) => value) },
   GeoJsonDataSource: { load: cesiumMocks.load },
   HeightReference: { CLAMP_TO_GROUND: 'clamp-to-ground' },
+  HorizontalOrigin: { CENTER: 'center', LEFT: 'left', RIGHT: 'right' },
   JulianDate: { now: vi.fn(() => 'now') },
+  LabelGraphics: vi.fn(function LabelGraphics(options) { return options; }),
+  LabelStyle: { FILL_AND_OUTLINE: 'fill-and-outline' },
   PinBuilder: vi.fn(function PinBuilder() { return { fromUrl: cesiumMocks.fromUrl }; }),
   VerticalOrigin: { BOTTOM: 'bottom' },
 }));
@@ -72,6 +76,11 @@ describe('POI GeoJSON', () => {
     const entities = collection.features.map((feature) => ({
       properties: { getValue: () => feature.properties },
       billboard: undefined as unknown,
+      label: undefined as undefined | {
+        horizontalOrigin: string;
+        pixelOffset: { y: number };
+        text: string;
+      },
     }));
     const source = { entities: { values: entities } };
     cesiumMocks.load.mockResolvedValue(source);
@@ -87,18 +96,32 @@ describe('POI GeoJSON', () => {
     expect(entities[0].billboard).toMatchObject({
       heightReference: 'clamp-to-ground',
       disableDepthTestDistance: Infinity,
-      image: { url: '/icons/henro-hub/temple.svg' },
+      image: { url: '/icons/tabler/temple.svg' },
     });
     expect(cesiumMocks.fromUrl.mock.calls.map(([url]) => url)).toEqual(
       expect.arrayContaining([
-        '/icons/henro-hub/temple.svg',
-        '/icons/henro-hub/daishido.svg',
-        '/icons/henro-hub/shrine.svg',
-        '/icons/henro-hub/cave.svg',
-        '/icons/henro-hub/pilgrimlodging.svg',
-        '/icons/henro-hub/enclosedhut.svg',
-        '/icons/henro-hub/semienclosedhut.svg',
+        '/icons/tabler/temple.svg',
+        '/icons/tabler/daishido.svg',
+        '/icons/tabler/shrine.svg',
+        '/icons/tabler/cave.svg',
+        '/icons/tabler/pilgrimlodging.svg',
+        '/icons/tabler/enclosedhut.svg',
+        '/icons/tabler/semienclosedhut.svg',
       ]),
+    );
+    expect(entities.every((entity) => entity.label !== undefined)).toBe(true);
+    expect(entities[0].label).toMatchObject({
+      text: 'T11 Fujii-dera', fillColor: 'white', outlineColor: 'black',
+      pixelOffset: { x: expect.any(Number), y: expect.any(Number) },
+    });
+    expect(entities[10].label).toMatchObject({ text: 'T12 Shōsan-ji' });
+    expect(entities[9].label).toMatchObject({ text: 'Ryūō-kutsu' });
+    expect(entities[0].label!.pixelOffset.y).toBeLessThan(-40);
+    expect(entities[0].label!.horizontalOrigin).toBe('right');
+    expect(entities[2].label!.horizontalOrigin).toBe('left');
+    expect(entities[2].label!.text).toContain('\n');
+    expect(entities[2].label!.text.replaceAll('\n', ' ')).toBe(
+      'Fujii-dera Okunoin — Dainichi Nyorai Statue',
     );
   });
 

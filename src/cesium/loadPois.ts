@@ -1,9 +1,13 @@
 import {
   BillboardGraphics,
+  Cartesian2,
   Color,
   GeoJsonDataSource,
   HeightReference,
+  HorizontalOrigin,
   JulianDate,
+  LabelGraphics,
+  LabelStyle,
   PinBuilder,
   VerticalOrigin,
   type Entity,
@@ -45,6 +49,25 @@ const categoryColors: Record<PoiCategory, string> = {
   accommodation: '#9a5812',
   viewpoint: '#b13554',
 };
+
+// Screen-space spacing for the close pairs at the two temples and Ryūsui-an.
+const labelPlacements: Record<string, { x: number; y: number; origin: HorizontalOrigin }> = {
+  'sdb-101': { x: -24, y: -70, origin: HorizontalOrigin.RIGHT },
+  'sdb-1009': { x: 24, y: -48, origin: HorizontalOrigin.LEFT },
+  'sdb-151': { x: 24, y: -96, origin: HorizontalOrigin.LEFT },
+  'sdb-163': { x: -24, y: -65, origin: HorizontalOrigin.RIGHT },
+  'sdb-422': { x: 24, y: -60, origin: HorizontalOrigin.LEFT },
+  'sdb-162': { x: -24, y: -72, origin: HorizontalOrigin.RIGHT },
+  'sdb-405': { x: 24, y: -52, origin: HorizontalOrigin.LEFT },
+  'sdb-77': { x: -24, y: -74, origin: HorizontalOrigin.RIGHT },
+  'sdb-139': { x: -24, y: -54, origin: HorizontalOrigin.RIGHT },
+};
+
+function wrapLabel(name: string): string {
+  if (name.length <= 22) return name;
+  const split = name.lastIndexOf(' ', 22);
+  return split > 0 ? `${name.slice(0, split)}\n${name.slice(split + 1)}` : name;
+}
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -115,7 +138,7 @@ export async function loadPois(viewer: Viewer, url: string): Promise<GeoJsonData
       pin = await pinBuilder.fromUrl(
         poiIcons[record.iconKey].url,
         Color.fromCssColorString(categoryColors[record.category]),
-        40,
+        44,
       );
       pins.set(pinKey, pin);
     }
@@ -124,6 +147,21 @@ export async function loadPois(viewer: Viewer, url: string): Promise<GeoJsonData
       image: pin,
       heightReference: HeightReference.CLAMP_TO_GROUND,
       verticalOrigin: VerticalOrigin.BOTTOM,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+    });
+    const placement = labelPlacements[record.id];
+    entity.label = new LabelGraphics({
+      text: record.id === 'sdb-101' ? 'T11 Fujii-dera'
+        : record.id === 'sdb-77' ? 'T12 Shōsan-ji' : wrapLabel(record.name),
+      font: '600 14px sans-serif',
+      fillColor: Color.WHITE,
+      outlineColor: Color.BLACK,
+      outlineWidth: 3,
+      style: LabelStyle.FILL_AND_OUTLINE,
+      pixelOffset: new Cartesian2(placement?.x ?? 0, placement?.y ?? -54),
+      horizontalOrigin: placement?.origin ?? HorizontalOrigin.CENTER,
+      verticalOrigin: VerticalOrigin.BOTTOM,
+      heightReference: HeightReference.CLAMP_TO_GROUND,
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
     });
   }

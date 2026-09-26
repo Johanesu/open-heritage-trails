@@ -21,10 +21,12 @@ function TrailPanel({ metadata }: TrailPanelProps) {
           aria-controls="trail-details"
           aria-expanded={expanded}
           aria-label={expanded ? 'Collapse trail information' : 'Expand trail information'}
+          className="trail-disclosure"
+          data-direction={expanded ? 'up' : 'down'}
           onClick={() => setExpanded((value) => !value)}
           type="button"
         >
-          {expanded ? 'Hide details' : 'Show details'}
+          <span aria-hidden="true" className="trail-chevron" />
         </button>
       </div>
       {expanded ? (

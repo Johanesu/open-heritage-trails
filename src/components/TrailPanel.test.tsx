@@ -38,9 +38,12 @@ describe('TrailPanel', () => {
   it('collapses details while retaining branding and route identity, then expands again', () => {
     render(<TrailPanel metadata={metadata} />);
     const toggle = screen.getByRole('button', { name: 'Collapse trail information' });
+    expect(toggle).toHaveAttribute('data-direction', 'up');
+    expect(toggle).toHaveTextContent('');
     fireEvent.click(toggle);
 
     expect(screen.getByRole('button', { name: 'Expand trail information' })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('button', { name: 'Expand trail information' })).toHaveAttribute('data-direction', 'down');
     expect(screen.getByText('Open Heritage Trails')).toBeInTheDocument();
     expect(screen.getByText('T11 Fujiidera → T12 Shōsanji')).toBeInTheDocument();
     expect(screen.queryByText('1,548 m')).not.toBeInTheDocument();

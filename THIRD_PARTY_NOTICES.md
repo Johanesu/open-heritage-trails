@@ -9,9 +9,9 @@ Seven SVG glyphs under `public/icons/tabler/` are derived directly from the Tabl
 | Local file | Upstream Tabler icon |
 | --- | --- |
 | `temple.svg` | `building-pavilion.svg` |
-| `daishido.svg` | `building-arch.svg` |
+| `daishido.svg` | `building-monument.svg` |
 | `shrine.svg` | `torii.svg` |
-| `cave.svg` | `mountain.svg` |
+| `cave.svg` | `building-tunnel.svg` |
 | `pilgrimlodging.svg` | `bed.svg` |
 | `enclosedhut.svg` | `building-cottage.svg` |
 | `semienclosedhut.svg` | `tent.svg` |
@@ -19,6 +19,8 @@ Seven SVG glyphs under `public/icons/tabler/` are derived directly from the Tabl
 Source project: https://github.com/tabler/tabler-icons
 
 Tabler Icons is licensed under the MIT License.
+
+These local marker-facing copies have minor presentation changes to stroke color and weight. The POI legend displays the same shapes in dark ink.
 
 ### MIT License
 

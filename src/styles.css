@@ -19,6 +19,18 @@ body,
 
 body {
   min-width: 320px;
+  overflow-x: hidden;
+}
+
+main {
+  min-height: 100dvh;
+  position: relative;
+}
+
+/* Canvas < map cards/controls < selected details/extras < Cesium help. */
+.trail-map {
+  inset: 0;
+  position: absolute;
 }
 
 button:focus-visible,
@@ -58,7 +70,6 @@ summary:focus-visible {
   justify-content: space-between;
 }
 
-.trail-panel-header button,
 .poi-card button {
   background: #fff;
   border: 1px solid #81938b;
@@ -67,6 +78,34 @@ summary:focus-visible {
   cursor: pointer;
   font: 600 0.78rem system-ui, sans-serif;
   padding: 0.3rem 0.45rem;
+}
+
+.trail-disclosure {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 0.4rem;
+  color: #1c2b2a;
+  cursor: pointer;
+  display: inline-flex;
+  flex: none;
+  height: 2.25rem;
+  justify-content: center;
+  margin: -0.45rem -0.45rem 0 0;
+  width: 2.25rem;
+}
+
+.trail-chevron {
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  display: block;
+  height: 0.55rem;
+  transform: rotate(225deg);
+  width: 0.55rem;
+}
+
+.trail-disclosure[data-direction="down"] .trail-chevron {
+  transform: rotate(45deg);
 }
 
 .project-name {
@@ -127,6 +166,17 @@ summary:focus-visible {
   z-index: 2;
 }
 
+.cesium-viewer-toolbar {
+  right: 1rem;
+  top: 1rem;
+  z-index: 4;
+}
+
+.cesium-navigation-help {
+  right: 0;
+  top: 2.75rem;
+}
+
 .map-extras {
   bottom: 2rem;
   display: flex;
@@ -135,7 +185,7 @@ summary:focus-visible {
   position: fixed;
   right: 1rem;
   width: 13rem;
-  z-index: 2;
+  z-index: 3;
 }
 
 .map-extra {
@@ -168,31 +218,79 @@ summary:focus-visible {
 
 .poi-legend img {
   flex: none;
+  filter: brightness(0);
 }
 
 @media (max-width: 700px) {
   .left-ui-stack {
     left: 0.5rem;
-    max-height: calc(100dvh - 7rem);
-    max-width: calc(100vw - 4rem);
+    max-height: calc(100dvh - 10rem);
+    max-width: calc(100vw - 1rem);
     top: 0.5rem;
-    width: calc(100vw - 4rem);
+    width: calc(100vw - 1rem);
+  }
+
+  .trail-panel {
+    padding: 0.75rem;
+  }
+
+  .trail-panel .trail-compact-title {
+    margin-top: 0.35rem;
+  }
+
+  .poi-card {
+    max-height: min(30dvh, 14rem);
   }
 
   .view-controls {
-    bottom: 3.5rem;
-    left: 0.5rem;
-    max-width: calc(100vw - 1rem);
+    bottom: 2.75rem;
+    justify-content: center;
+    left: 3.25rem;
+    max-width: calc(100vw - 3.75rem);
     right: 0.5rem;
     top: auto;
   }
 
   .map-extras {
-    align-self: flex-end;
-    bottom: auto;
-    position: static;
-    right: auto;
+    align-items: flex-end;
+    bottom: 6.25rem;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-height: calc(100dvh - 12rem);
+    max-width: calc(100vw - 1rem);
+    right: 0.5rem;
+    width: auto;
+  }
+
+  .map-extra {
+    max-height: min(25dvh, 13rem);
+    max-width: calc(100vw - 1rem);
+    overflow-y: auto;
+    width: max-content;
+  }
+
+  .map-extra[open] {
     width: 11rem;
+  }
+
+  .cesium-viewer-toolbar {
+    bottom: 2.75rem;
+    left: 0.5rem;
+    right: auto;
+    top: auto;
+  }
+
+  .cesium-navigation-help {
+    background: #262626;
+    bottom: 2.75rem;
+    left: 0;
+    max-height: calc(100dvh - 8rem);
+    max-width: calc(100vw - 1rem);
+    overflow-y: auto;
+    right: auto;
+    top: auto;
+    transform-origin: 1rem calc(100% + 0.5rem);
   }
 }
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Cartographic, Entity, Math as CesiumMath, SceneMode, ScreenSpaceEventType, type Cartesian2, type GeoJsonDataSource, type Viewer } from 'cesium';
+import { Entity, SceneMode, ScreenSpaceEventType, type Cartesian2, type GeoJsonDataSource, type Viewer } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
-import { fitTrail, flyToEndpoint } from '../cesium/camera';
+import { fitTrail, flyToEndpoint, playTrailIntro, showIntroGlobe } from '../cesium/camera';
 import { createViewer } from '../cesium/createViewer';
 import { getPoiRecord, loadPois, type PoiRecord } from '../cesium/loadPois';
 import { loadTrail } from '../cesium/loadTrail';
@@ -26,16 +26,7 @@ function CesiumScene({ onSelectPoi }: CesiumSceneProps) {
     const positions = scene.trailSource.entities.values[0]?.polyline?.positions?.getValue(
       scene.viewer.clock.currentTime,
     );
-    const point = positions?.[last ? positions.length - 1 : 0];
-    if (!point) return;
-
-    const location = Cartographic.fromCartesian(point);
-    void flyToEndpoint(
-      scene.viewer,
-      CesiumMath.toDegrees(location.longitude),
-      CesiumMath.toDegrees(location.latitude),
-      1800,
-    );
+    if (positions?.length) void flyToEndpoint(scene.viewer, positions, last);
   }
 
   function switchMode(mode: typeof SceneMode.SCENE2D | typeof SceneMode.SCENE3D) {
@@ -82,6 +73,8 @@ function CesiumScene({ onSelectPoi }: CesiumSceneProps) {
       }
 
       viewer = createdViewer;
+      const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+      if (!reducedMotion) showIntroGlobe(createdViewer);
       const trailSource = await loadTrail(
         createdViewer,
         getTrailGeoJsonUrl(),
@@ -101,7 +94,8 @@ function CesiumScene({ onSelectPoi }: CesiumSceneProps) {
               : null,
           );
         }, ScreenSpaceEventType.LEFT_CLICK);
-        await fitTrail(createdViewer, trailSource);
+        await playTrailIntro(createdViewer, trailSource, reducedMotion);
+        if (disposed) return;
         sceneRef.current = { viewer: createdViewer, trailSource };
         setReady(true);
       }
@@ -129,9 +123,10 @@ function CesiumScene({ onSelectPoi }: CesiumSceneProps) {
   return (
     <section
       aria-label="Trail map"
-      style={{ inset: 0, position: 'fixed', zIndex: 0 }}
+      className="trail-map"
     >
       <div
+        className="cesium-container"
         data-testid="cesium-container"
         ref={containerRef}
         style={{ height: '100%', width: '100%' }}
