@@ -1,5 +1,6 @@
 import {
   BoundingSphere,
+  Cartesian2,
   Cartesian3,
   Cartographic,
   HeadingPitchRange,
@@ -112,7 +113,7 @@ export async function flyToEndpoint(
 
 export function showIntroGlobe(viewer: Viewer): void {
   viewer.camera.setView({
-    destination: Cartesian3.fromDegrees(135, 25, 18_000_000),
+    destination: Cartesian3.fromDegrees(135, 25, 26_000_000),
     orientation: { heading: 0, pitch: CesiumMath.toRadians(-90), roll: 0 },
   });
 }
@@ -120,6 +121,7 @@ export function showIntroGlobe(viewer: Viewer): void {
 export function waitForGlobeReady(scene: Scene, maxWaitMs = 2_500): Promise<boolean> {
   return new Promise((resolve) => {
     let stableFrames = 0;
+    let visibleFrames = 0;
     let finished = false;
     let removeListener: () => void = () => undefined;
     let timer: ReturnType<typeof setTimeout>;
@@ -131,10 +133,15 @@ export function waitForGlobeReady(scene: Scene, maxWaitMs = 2_500): Promise<bool
       resolve(ready);
     };
     removeListener = scene.postRender.addEventListener(() => {
-      stableFrames = scene.globe?.tilesLoaded ? stableFrames + 1 : 0;
+      const ray = scene.camera.getPickRay(new Cartesian2(
+        scene.canvas.clientWidth / 2, scene.canvas.clientHeight / 2,
+      ));
+      const visible = ray && scene.globe?.pick(ray, scene);
+      visibleFrames = visible ? visibleFrames + 1 : 0;
+      stableFrames = visible && scene.globe.tilesLoaded ? stableFrames + 1 : 0;
       if (stableFrames >= 2) finish(true);
     });
-    timer = setTimeout(() => finish(false), maxWaitMs);
+    timer = setTimeout(() => finish(visibleFrames >= 2), maxWaitMs);
   });
 }
 
@@ -146,13 +153,14 @@ export async function playTrailIntro(
 ): Promise<void> {
   if (reducedMotion) {
     await fitTrail(viewer, source, 0);
-    await waitForGlobeReady(viewer.scene);
+    if (!await waitForGlobeReady(viewer.scene, 8_000)) throw new Error('Cesium globe did not become visible');
     reveal();
     return;
   }
 
   showIntroGlobe(viewer);
-  await waitForGlobeReady(viewer.scene);
+  if (!await waitForGlobeReady(viewer.scene, 8_000)) throw new Error('Cesium globe did not become visible');
+  await new Promise<void>((resolve) => setTimeout(resolve, 1_000));
   await new Promise<void>((resolve) => {
     viewer.camera.flyTo({
       destination: Cartesian3.fromDegrees(134, 34, 1_500_000),
@@ -162,7 +170,7 @@ export async function playTrailIntro(
       cancel: resolve,
     });
   });
-  await waitForGlobeReady(viewer.scene);
+  if (!await waitForGlobeReady(viewer.scene, 5_000)) throw new Error('Cesium globe did not become visible');
   reveal();
   await fitTrail(viewer, source, 2.5);
 }

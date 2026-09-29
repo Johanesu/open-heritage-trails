@@ -14,6 +14,7 @@ const cesiumMocks = vi.hoisted(() => ({
 
 vi.mock('cesium', () => ({
   BoundingSphere: { fromPoints: cesiumMocks.fromPoints },
+  Cartesian2: vi.fn(function Cartesian2(x, y) { return { x, y }; }),
   Cartesian3: { fromDegrees: cesiumMocks.fromDegrees, fromRadians: cesiumMocks.fromRadians },
   Cartographic: { fromCartesian: (point: { longitude: number; latitude: number }) => ({
     longitude: point.longitude * Math.PI / 180,
@@ -113,7 +114,9 @@ describe('camera helpers', () => {
     let render: (() => void) | undefined;
     const remove = vi.fn();
     const scene = {
-      globe: { tilesLoaded: false },
+      globe: { tilesLoaded: false, pick: vi.fn(() => ({})) },
+      canvas: { clientWidth: 1200, clientHeight: 800 },
+      camera: { getPickRay: vi.fn(() => 'ray') },
       postRender: { addEventListener: vi.fn((callback) => { render = callback; return remove; }) },
     };
     const ready = waitForGlobeReady(scene as never, 1000);
@@ -126,32 +129,135 @@ describe('camera helpers', () => {
     expect(remove).toHaveBeenCalledOnce();
   });
 
+  it('does not treat an empty tile queue as a visible globe surface', async () => {
+    vi.useFakeTimers();
+    let render: (() => void) | undefined;
+    const scene = {
+      globe: { tilesLoaded: true, pick: vi.fn(() => undefined) },
+      canvas: { clientWidth: 1200, clientHeight: 800 },
+      camera: { getPickRay: vi.fn(() => 'ray') },
+      postRender: { addEventListener: vi.fn((callback) => { render = callback; return vi.fn(); }) },
+    };
+
+    try {
+      const ready = waitForGlobeReady(scene as never, 100);
+      render!();
+      render!();
+      await vi.advanceTimersByTimeAsync(100);
+      await expect(ready).resolves.toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not reveal trail data when globe rendering never becomes visible', async () => {
+    vi.useFakeTimers();
+    const reveal = vi.fn();
+    const viewer = {
+      scene: {
+        globe: { tilesLoaded: false, pick: vi.fn(() => undefined) },
+        canvas: { clientWidth: 1200, clientHeight: 800 },
+        camera: { getPickRay: vi.fn(() => 'ray') },
+        postRender: { addEventListener: vi.fn(() => vi.fn()) },
+      },
+      camera: {
+        setView: vi.fn(),
+        flyTo: vi.fn((options) => options.complete()),
+      },
+      clock: { currentTime: 'now' },
+      canvas: { clientWidth: 1200, clientHeight: 800 },
+      flyTo: vi.fn().mockResolvedValue(true),
+    };
+
+    try {
+      const result = playTrailIntro(viewer as never, source as never, false, reveal)
+        .then(() => 'resolved', (error: unknown) => error);
+      await vi.advanceTimersByTimeAsync(8_000);
+      expect(await result).toEqual(new Error('Cesium globe did not become visible'));
+      expect(reveal).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('waits for a slow first globe surface instead of failing at the old short timeout', async () => {
+    vi.useFakeTimers();
+    let render: (() => void) | undefined;
+    let visible = false;
+    const viewer = {
+      scene: {
+        globe: { tilesLoaded: true, pick: vi.fn(() => visible ? {} : undefined) },
+        canvas: { clientWidth: 1200, clientHeight: 800 },
+        camera: { getPickRay: vi.fn(() => 'ray') },
+        postRender: { addEventListener: vi.fn((callback) => {
+          render = callback;
+          if (visible) queueMicrotask(() => { callback(); callback(); });
+          return vi.fn();
+        }) },
+      },
+      camera: { setView: vi.fn(), flyTo: vi.fn((options) => options.complete()) },
+      clock: { currentTime: 'now' }, canvas: { clientWidth: 1200, clientHeight: 800 },
+      flyTo: vi.fn().mockResolvedValue(true),
+    };
+
+    try {
+      const result = playTrailIntro(viewer as never, source as never, false)
+        .then(() => 'completed', (error: unknown) => error);
+      await vi.advanceTimersByTimeAsync(3_000);
+      visible = true;
+      render!();
+      render!();
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(await result).toBe('completed');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('starts at the globe, flies toward Shikoku, then settles on the route', async () => {
+    vi.useFakeTimers();
     const order: string[] = [];
     const viewer = {
       clock: { currentTime: 'now' }, canvas: { clientWidth: 1200, clientHeight: 800 },
       flyTo: vi.fn().mockImplementation(async () => { order.push('route'); return true; }),
-      scene: { globe: { tilesLoaded: true }, postRender: { addEventListener: vi.fn((callback) => {
+      scene: { globe: { tilesLoaded: true, pick: vi.fn(() => ({})) },
+        canvas: { clientWidth: 1200, clientHeight: 800 },
+        camera: { getPickRay: vi.fn(() => 'ray') },
+        postRender: { addEventListener: vi.fn((callback) => {
         queueMicrotask(() => { callback(); callback(); });
         return vi.fn();
       }) } },
       camera: {
-        setView: vi.fn(() => order.push('globe')),
+        setView: vi.fn((_options: { destination: { height: number } }) => order.push('globe')),
         flyTo: vi.fn((options) => { order.push('Shikoku'); options.complete(); }),
       },
     };
 
-    await playTrailIntro(viewer as never, source as never, false, () => order.push('reveal'));
+    try {
+      const intro = playTrailIntro(viewer as never, source as never, false, () => order.push('reveal'));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(order).toEqual(['globe']);
+      expect(viewer.camera.setView.mock.calls[0][0].destination.height).toBeGreaterThanOrEqual(24_000_000);
+      await vi.advanceTimersByTimeAsync(900);
+      expect(order).toEqual(['globe']);
+      await vi.advanceTimersByTimeAsync(200);
+      await intro;
 
-    expect(order).toEqual(['globe', 'Shikoku', 'reveal', 'route']);
-    expect(viewer.flyTo.mock.calls[0][1].duration).toBeGreaterThan(0);
+      expect(order).toEqual(['globe', 'Shikoku', 'reveal', 'route']);
+      expect(viewer.flyTo.mock.calls[0][1].duration).toBeGreaterThan(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('skips the globe and flight when reduced motion is requested', async () => {
     const viewer = {
       clock: { currentTime: 'now' }, canvas: { clientWidth: 1200, clientHeight: 800 },
       flyTo: vi.fn().mockResolvedValue(true),
-      scene: { globe: { tilesLoaded: true }, postRender: { addEventListener: vi.fn((callback) => {
+      scene: { globe: { tilesLoaded: true, pick: vi.fn(() => ({})) },
+        canvas: { clientWidth: 1200, clientHeight: 800 },
+        camera: { getPickRay: vi.fn(() => 'ray') },
+        postRender: { addEventListener: vi.fn((callback) => {
         queueMicrotask(() => { callback(); callback(); });
         return vi.fn();
       }) } },

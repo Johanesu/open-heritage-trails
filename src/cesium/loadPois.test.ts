@@ -3,7 +3,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getPoiRecord, loadPois, setPoiLabelVisibility, setPoiSceneMode, validatePoiGeoJson } from './loadPois';
 
 const cesiumMocks = vi.hoisted(() => ({
-  fromUrl: vi.fn(async (url: string, _color: unknown, _size: number) => ({ url })),
   load: vi.fn(),
 }));
 
@@ -18,7 +17,6 @@ vi.mock('cesium', () => ({
   JulianDate: { now: vi.fn(() => 'now') },
   LabelGraphics: vi.fn(function LabelGraphics(options) { return options; }),
   LabelStyle: { FILL_AND_OUTLINE: 'fill-and-outline' },
-  PinBuilder: vi.fn(function PinBuilder() { return { fromUrl: cesiumMocks.fromUrl }; }),
   SceneMode: { SCENE2D: 2, SCENE3D: 3 },
   VerticalOrigin: { BOTTOM: 'bottom' },
 }));
@@ -89,7 +87,9 @@ describe('POI GeoJSON', () => {
     const source = { show: true, entities: { values: entities } };
     cesiumMocks.load.mockResolvedValue(source);
     const add = vi.fn().mockResolvedValue(source);
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => approved }));
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => url.endsWith('pois.geojson')
+      ? { ok: true, json: async () => approved }
+      : { ok: true, text: async () => readFileSync(`public${url}`, 'utf8') }));
 
     await expect(loadPois({ dataSources: { add } } as never,
       '/demo/shikoku-henro/t11-t12/pois.geojson', true)).resolves.toBe(source);
@@ -101,20 +101,21 @@ describe('POI GeoJSON', () => {
     expect(entities[0].billboard).toMatchObject({
       heightReference: 'clamp-to-ground',
       disableDepthTestDistance: Infinity,
-      image: { url: '/icons/tabler/temple.svg' },
-      scale: 44 / 128,
+      width: 42,
+      height: 49,
     });
-    expect(cesiumMocks.fromUrl.mock.calls[0][2]).toBe(128);
-    expect(cesiumMocks.fromUrl.mock.calls.map(([url]) => url)).toEqual(
-      expect.arrayContaining([
-        '/icons/tabler/temple.svg',
-        '/icons/tabler/daishido.svg',
-        '/icons/tabler/shrine.svg',
-        '/icons/tabler/cave.svg',
-        '/icons/tabler/pilgrimlodging.svg',
-        '/icons/tabler/enclosedhut.svg',
-        '/icons/tabler/semienclosedhut.svg',
-      ]),
+    const image = (entities[0].billboard as { image: string }).image;
+    expect(image).toMatch(/^data:image\/svg\+xml/);
+    const marker = new DOMParser().parseFromString(decodeURIComponent(image.split(',')[1]), 'image/svg+xml');
+    expect(marker.querySelector('parsererror')).toBeNull();
+    expect(marker.documentElement.getAttribute('width')).toBe('240');
+    expect(marker.documentElement.getAttribute('height')).toBe('280');
+    expect(marker.querySelector('path')?.getAttribute('fill')).toBe('#174d91');
+    expect(marker.querySelector('g')?.getAttribute('stroke')).toBe('#fff');
+    expect(marker.querySelectorAll('g path').length).toBeGreaterThan(0);
+    expect(marker.querySelector('g path')?.getAttribute('d')).toBe(
+      new DOMParser().parseFromString(readFileSync('public/icons/tabler/temple.svg', 'utf8'), 'image/svg+xml')
+        .querySelector('path')?.getAttribute('d'),
     );
     expect(entities.every((entity) => entity.label !== undefined)).toBe(true);
     expect(entities[0].label).toMatchObject({

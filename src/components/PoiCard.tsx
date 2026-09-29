@@ -1,4 +1,5 @@
 import type { PoiRecord } from '../cesium/loadPois';
+import { poiIcons } from '../data/poiIcons';
 
 interface PoiCardProps {
   poi: PoiRecord;
@@ -17,9 +18,11 @@ function PoiCard({ poi, onClose }: PoiCardProps) {
         onClick={onClose}
         type="button"
       >
-        <span aria-hidden="true">×</span>
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16">
+          <path d="M3 3l10 10M13 3L3 13" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+        </svg>
       </button>
-      <p style={{ fontSize: '0.8rem', fontWeight: 700, margin: '0 0 0.5rem' }}>{poi.category}</p>
+      <p style={{ fontSize: '0.8rem', fontWeight: 700, margin: '0 0 0.5rem' }}>{poiIcons[poi.iconKey].label}</p>
       <h2 style={{ fontSize: '1.1rem', margin: '0 0 0.75rem' }}>{poi.name}</h2>
       <p style={{ lineHeight: 1.45, margin: 0 }}>{poi.description}</p>
       {poi.henroHubUrl ? (

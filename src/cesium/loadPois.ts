@@ -9,7 +9,6 @@ import {
   JulianDate,
   LabelGraphics,
   LabelStyle,
-  PinBuilder,
   SceneMode,
   VerticalOrigin,
   type Entity,
@@ -52,9 +51,19 @@ const categoryColors: Record<PoiCategory, string> = {
   viewpoint: '#b13554',
 };
 
-const PIN_SIZE = 128;
-const PIN_SCALE = 44 / PIN_SIZE;
 const CLOSE_LABEL_HEIGHT = 7_000;
+
+function markerImage(glyphSvg: string, color: string): string {
+  const glyph = new DOMParser().parseFromString(glyphSvg, 'image/svg+xml');
+  const paths = Array.from(glyph.querySelectorAll('path')).map((path) => path.outerHTML).join('');
+  if (glyph.documentElement.localName !== 'svg' || !paths) throw new Error('Invalid POI icon');
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="240" height="280" viewBox="0 0 48 56">
+    <path d="M24 1.5C12 1.5 3.5 10 3.5 21.5C3.5 35 18.5 48.5 24 55C29.5 48.5 44.5 35 44.5 21.5C44.5 10 36 1.5 24 1.5Z" fill="${color}" stroke="#fff" stroke-width="1.5"/>
+    <g transform="translate(11 7) scale(1.0833)" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${paths}</g>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
 
 function wrapLabel(name: string): string {
   if (name.length <= 22) return name;
@@ -145,8 +154,7 @@ export async function loadPois(
 
   const collection = validatePoiGeoJson(await response.json() as unknown);
   const source = await GeoJsonDataSource.load(collection, { clampToGround: true });
-  const pinBuilder = new PinBuilder();
-  const pins = new Map<string, HTMLCanvasElement>();
+  const pins = new Map<string, string>();
   const time = JulianDate.now();
 
   for (const entity of source.entities.values) {
@@ -156,17 +164,16 @@ export async function loadPois(
     const pinKey = `${record.category}:${record.iconKey}`;
     let pin = pins.get(pinKey);
     if (!pin) {
-      pin = await pinBuilder.fromUrl(
-        poiIcons[record.iconKey].url,
-        Color.fromCssColorString(categoryColors[record.category]),
-        PIN_SIZE,
-      );
+      const iconResponse = await fetch(poiIcons[record.iconKey].url);
+      if (!iconResponse.ok) throw new Error('Unable to load POI icon');
+      pin = markerImage(await iconResponse.text(), categoryColors[record.category]);
       pins.set(pinKey, pin);
     }
 
     entity.billboard = new BillboardGraphics({
       image: pin,
-      scale: PIN_SCALE,
+      width: 42,
+      height: 49,
       heightReference: HeightReference.CLAMP_TO_GROUND,
       verticalOrigin: VerticalOrigin.BOTTOM,
       disableDepthTestDistance: Number.POSITIVE_INFINITY,

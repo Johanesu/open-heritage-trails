@@ -12,13 +12,14 @@ describe('PoiCard', () => {
     }} onClose={onClose} />);
 
     expect(screen.getByRole('heading', { name: 'Fujii-dera' })).toBeInTheDocument();
-    expect(screen.getByText('temple')).toBeInTheDocument();
+    expect(screen.getByText('Temple')).toBeInTheDocument();
     expect(screen.getByText('Approved description.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'View in Henro Hub' })).toHaveAttribute(
       'href', 'https://henro.app/places/fujii-dera',
     );
     const close = screen.getByRole('button', { name: 'Close POI details' });
-    expect(close).toHaveTextContent('×');
+    expect(close.querySelector('svg')).toBeInTheDocument();
+    expect(close).not.toHaveTextContent('×');
     expect(screen.queryByText('Close')).not.toBeInTheDocument();
     fireEvent.click(close);
     expect(onClose).toHaveBeenCalledOnce();
@@ -33,5 +34,19 @@ describe('PoiCard', () => {
 
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
     expect(screen.getByText('An enclosed pilgrim hut in the forest.')).toBeInTheDocument();
+  });
+
+  it.each([
+    ['cave', 'Cave / Rock'],
+    ['daishido', 'Daishi-dō'],
+    ['shrine', 'Shrine'],
+  ] as const)('shows the %s subtype using legend wording', (iconKey, label) => {
+    render(<PoiCard poi={{
+      id: 'example', name: 'Approved POI', category: 'sacred-site', iconKey,
+      description: 'Approved description.',
+    }} onClose={() => undefined} />);
+
+    expect(screen.getByText(label)).toBeInTheDocument();
+    expect(screen.queryByText('sacred-site')).not.toBeInTheDocument();
   });
 });
