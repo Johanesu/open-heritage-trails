@@ -14,13 +14,17 @@ The current reference implementation follows the Shikoku Henro from Temple 11 Fu
 
 The committed reference data lives in [`public/demo/shikoku-henro/t11-t12/`](public/demo/shikoku-henro/t11-t12/). The POIs, route, and metadata are external files rather than hard-coded React content.
 
-## Status and public-release gates
+## Live prototype and status
 
-This is a working local prototype and a Cesium Ecosystem Grant reference implementation. It has **not** been publicly deployed by this repository task.
+The current prototype is publicly deployed at:
+
+**https://open-heritage-trails.vercel.app/**
+
+It is a Cesium Ecosystem Grant reference implementation and remains intentionally limited to the Temple 11 Fujiidera → Temple 12 Shōsanji section while the reusable toolkit architecture is developed.
 
 The T11 → T12 route is attributed as OpenStreetMap/ODbL data sourced via Waymarked Trails; the exact historical retrieval date/file is no longer available but the source is documented in [`DATA_LICENSE.md`](DATA_LICENSE.md) and the [T11 → T12 source notes](public/demo/shikoku-henro/t11-t12/SOURCE.md). The POI glyphs use MIT-licensed Tabler Icons; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
-Before live deployment, the remaining operational gate is the final production Cesium ion token configuration for the public hostname. Elevation-profile provenance remains separately documented because the original HGT provider is not recorded.
+The production deployment uses a dedicated, hostname-restricted Cesium ion token with access limited to the Cesium World Terrain and Bing Maps Aerial assets used by the prototype. Elevation-profile provenance remains separately documented because the original HGT provider is not recorded.
 
 ## Run locally
 
@@ -44,7 +48,7 @@ Before live deployment, the remaining operational gate is the final production C
    npm run dev
    ```
 
-Without a token, the map shows a visible configuration error instead of initializing Cesium. For eventual public hosting, use a **separate** production token; see [`VERCEL.md`](VERCEL.md).
+Without a token, the map shows a visible configuration error instead of initializing Cesium. For public hosting, use a **separate** production token restricted to the deployed hostname and required Cesium assets; see [`VERCEL.md`](VERCEL.md).
 
 ## Architecture and project documents
 
